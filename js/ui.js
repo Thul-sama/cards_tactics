@@ -99,6 +99,15 @@ function texteEnrage() {
     ' (+' + prochain + ' au prochain tour ennemi' + (prochain ? '' : ', commence au tour ennemi ' + L.startTurn) + ')</p>';
 }
 
+// Ce qui s'est passé pendant le dernier tour ennemi, avec la frappe directe mise en évidence.
+function recapEnnemi() {
+  const c = J.combat;
+  if (!c.recapEnnemi || !c.recapEnnemi.length || c.phase === 'ennemi') return '';
+  return '<details class="recap"' + (c.directDernierTour ? ' open' : '') + '><summary>Dernier tour ennemi' +
+    (c.directDernierTour ? ' — <b class="enrage">frappe directe : −' + c.directDernierTour + ' PV</b>' : '') + '</summary><ul>' +
+    c.recapEnnemi.map(l => '<li>' + l + '</li>').join('') + '</ul></details>';
+}
+
 function zoneEnnemi() {
   const c = J.combat, e = c.ennemi;
   let pieges = '';
@@ -109,6 +118,7 @@ function zoneEnnemi() {
     htmlHeros(e, 'he') +
     '<p class="intention">Intention ce tour : <b>' + texteIntention(e.tours + 1) + '</b></p>' +
     texteEnrage() +
+    recapEnnemi() +
     '<div class="rang">' + pieges + '</div>' +
     '<div class="rang">' + e.monstres.map(m => htmlUnite(m, e)).join('') +
     emplacementsVides(e.def.emplacementsMonstres - e.monstres.length) + '</div>' +
@@ -232,7 +242,7 @@ function htmlResume(r) {
   return '<h2>Combat ' + r.numero + ' : ' + (r.victoire ? 'victoire' : 'défaite') + ' contre ' + r.ennemi + '</h2>' +
     '<table class="resume">' +
     ligne('Tours', r.tours) +
-    ligne('Or', 'gagné ' + r.orGagne + ' (dont intérêts ' + r.interets + ', ventes ' + r.ventes + ') · dépensé ' + r.orDepense + ' · épargné ' + r.orEpargne) +
+    ligne('Or', 'gagné ' + r.orGagne + ' (dont intérêts ' + r.interets + ', ventes ' + r.ventes + ') · dépensé ' + r.orDepense + ' (' + r.partDepensee + ' % de l\'or gagné) · épargné ' + r.orEpargne) +
     ligne('PV restants', r.pv + ' (' + r.pvPct + ' %)') +
     ligne('Monstres ennemis', r.ennemisPoses + ' posés, ' + r.ennemisAyantAttaque + ' ont attaqué au moins une fois') +
     ligne('Plateau ennemi nettoyé', r.toursNettoyes + ' tour(s) sur ' + r.tours) +
@@ -244,11 +254,11 @@ function htmlResume(r) {
 
 function htmlHistorique() {
   if (!HISTORIQUE.length) return '<p>Aucun combat terminé pendant cette session.</p>';
-  return '<table class="resume"><tr><th>#</th><th>Ennemi</th><th>Issue</th><th>Tours</th><th>PV</th><th>Nettoyé</th><th>Dégâts</th></tr>' +
+  return '<table class="resume"><tr><th>#</th><th>Ennemi</th><th>Issue</th><th>Tours</th><th>PV</th><th>Or dépensé</th><th>Nettoyé</th><th>Dégâts</th></tr>' +
     HISTORIQUE.map(r => {
       const d = r.degats;
       return '<tr><td>' + r.numero + '</td><td>' + r.ennemi + '</td><td>' + (r.victoire ? 'V' : 'D') + '</td><td>' + r.tours +
-        '</td><td>' + r.pvPct + ' %</td><td>' + r.toursNettoyes + '/' + r.tours + '</td><td>' + (d.monstres + d.sorts + d.direct + d.enrage) + '</td></tr>';
+        '</td><td>' + r.pvPct + ' %</td><td>' + r.partDepensee + ' %</td><td>' + r.toursNettoyes + '/' + r.tours + '</td><td>' + (d.monstres + d.sorts + d.direct + d.enrage) + '</td></tr>';
     }).join('') + '</table>' +
     HISTORIQUE.slice().reverse().map(r => '<details><summary>Détail du combat ' + r.numero + '</summary>' + htmlResume(r) + '</details>').join('');
 }
@@ -287,6 +297,12 @@ function htmlReglages() {
       Object.keys(L).map(k => champ(k === 'enabled' ? 'activé' : k, 'data-chemin="leviers.' + nom + '.' + k + '"', L[k])).join('') +
       '</fieldset>';
   }
+  h += '<fieldset><legend>Économie</legend>' +
+    champ('orParTour', 'data-chemin="orParTour"', CONFIG.orParTour) +
+    champ('interets.tranche', 'data-chemin="interets.tranche"', CONFIG.interets.tranche) +
+    champ('interets.plafond', 'data-chemin="interets.plafond"', CONFIG.interets.plafond) +
+    champ('prixRelance', 'data-chemin="prixRelance"', CONFIG.prixRelance) +
+    '</fieldset>';
   h += '<fieldset><legend>Outils</legend>' + champ('choix de l\'ennemi avant chaque combat', 'data-chemin="choixEnnemi"', CONFIG.choixEnnemi) + '</fieldset>';
   for (const id of Object.keys(ENNEMIS)) {
     const d = ENNEMIS[id], a = 'data-ennemi="' + id + '" data-chemin="';

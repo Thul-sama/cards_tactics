@@ -84,7 +84,7 @@ Jeu de cartes tactique solo, hors ligne, en PvE, avec une structure de roguelike
 ## 9. Économie
 
 - De l'or est gagné à chaque tour.
-- Des **intérêts** sont versés sur l'or épargné.
+- Des **intérêts** sont versés sur l'or épargné : 1 or par tranche de 5, plafonné à 1 par tour.
 - La **relance** de la boutique est payante.
 - Le **prix** des cartes dépend de leur rareté.
 - La **vente** rapporte de l'or. Sa valeur est **[à valider]**.
@@ -94,7 +94,7 @@ Jeu de cartes tactique solo, hors ligne, en PvE, avec une structure de roguelike
 | Paramètre | Valeur |
 |---|---|
 | Or par tour | 3 |
-| Intérêts | 1 or par tranche de 5 épargnés, plafonné à 3 |
+| Intérêts | 1 or par tranche de 5 épargnés, plafonné à **1** (3 avant les réglages n°1) |
 | Prix d'une relance | 1 |
 | Taille de la boutique | 3 cartes |
 | Main maximale | 7 |
@@ -104,6 +104,8 @@ Jeu de cartes tactique solo, hors ligne, en PvE, avec une structure de roguelike
 | Prix de vente | 1 pour une commune, 2 pour une rare, 3 pour une épique |
 | PV du héros du joueur | 20 |
 | Chrono boutique / jeu | 30 s / 15 s |
+| Bande de pillards | 20 PV, 4 emplacements de monstres, 2 monstres posés par tour |
+| Attaque directe du héros ennemi | 2 dégâts par tour ennemi, ignore la Provocation |
 
 ## 11. Pool de départ proposé pour le prototype
 
@@ -139,15 +141,17 @@ Jeu de cartes tactique solo, hors ligne, en PvE, avec une structure de roguelike
 
 L'ennemi a un **deck prédéfini** et **annonce son intention** au tour précédent. Ses cartes viennent du **même pool que le joueur** (section 11).
 
-Exemple, « Bande de pillards » (héros à 20 PV) :
+Exemple, « Bande de pillards » (héros à 20 PV, 4 emplacements de monstres, 2 exemplaires par pose de monstre avec le levier 2.1) :
 
 | Tour | Action |
 |---|---|
-| 1 | Pose un Gobelin (2/1) |
-| 2 | Pose un Gobelin (2/1) et attaque |
-| 3 | Pose une Fosse à pieux (face cachée) et attaque |
-| 4 | Pose un Chef pillard (4/4) et attaque |
-| 5 et suivants | Attaque, et pose un Gobelin s'il a un emplacement libre |
+| 1 | Pose 2 Gobelins (2/1) |
+| 2 | Pose 2 Gobelins et attaque |
+| 3 | Pose une Fosse à pieux (face cachée), pose 2 Gobelins et attaque |
+| 4 | Pose un Chef pillard (4/4, Charge avec le levier 2.5) et un Gobelin, puis attaque |
+| 5 et suivants | Attaque, puis pose 2 Gobelins dans les emplacements libres |
+
+**Les scripts bouclent** : une fois les tours scriptés joués, la séquence `ensuite` se répète à chaque tour jusqu'à la fin du combat, pour que l'ennemi continue à agir. Une pose sans emplacement libre est annulée, et le journal l'indique.
 
 ## 13. Points ouverts
 
@@ -216,7 +220,7 @@ Les priorités sont paramétrables pour chaque ennemi dans `data/enemies.js` (`i
 
 ## 16. Leviers de pression ennemie et diagnostic
 
-Ces outils servent à équilibrer. Chaque levier se règle dans `data/config.js` (`leviers`) ou dans `data/enemies.js`, et possède un interrupteur `enabled`. **Par défaut, tous les leviers sont désactivés, sauf les statistiques.**
+Ces outils servent à équilibrer. Chaque levier se règle dans `data/config.js` (`leviers`) ou dans `data/enemies.js`, et possède un interrupteur `enabled`. Au départ, tous les leviers étaient désactivés sauf les statistiques. Les réglages n°1 activent les poses multiples (16.2) et l'attaque directe (16.5) ; les niveaux des cartes ennemies (16.3) sont aussi activés.
 
 ### 16.1 Statistiques de diagnostic (`leviers.statistiques`, activé)
 
@@ -224,6 +228,7 @@ Ces outils servent à équilibrer. Chaque levier se règle dans `data/config.js`
 
 - le nombre de tours ;
 - l'or gagné (revenu, intérêts et ventes), dépensé (achats, relances, niveaux) et épargné (or restant), ainsi que les intérêts touchés ;
+- la **part d'or dépensée**, en pourcentage de l'or gagné pendant le combat. Elle peut dépasser 100 % si le joueur dépense de l'or épargné lors des combats précédents ;
 - les PV restants du joueur, en valeur et en pourcentage ;
 - le nombre de monstres ennemis posés, et combien ont attaqué au moins une fois ;
 - le nombre de tours où le plateau ennemi a été **entièrement nettoyé** à la fin du tour du joueur. Un tour ne compte que si l'ennemi avait au moins un monstre au début de la phase de jeu. **[à valider]**
@@ -232,13 +237,13 @@ Ces outils servent à équilibrer. Chaque levier se règle dans `data/config.js`
 
 Le bouton **Historique** liste les combats de la session, pour comparer plusieurs parties. Rien n'est sauvegardé : recharger la page efface l'historique.
 
-### 16.2 Plusieurs poses par tour (`leviers.posesMultiples`, désactivé)
+### 16.2 Plusieurs poses par tour (`leviers.posesMultiples`, **activé** depuis les réglages n°1)
 
-Quand le levier est actif, chaque action « pose un monstre » du script pose `posesParTour` exemplaires de ce monstre, dans la limite des emplacements libres. L'intention l'annonce, par exemple « Pose 2× Gobelin éclaireur ». **[à valider]** : les scripts ne posant qu'un monstre à la fois, « nombre de poses par tour » est interprété comme un nombre d'exemplaires.
+Quand le levier est actif, chaque action « pose un monstre » du script pose `posesParTour` exemplaires de ce monstre, dans la limite des emplacements libres. Une pose peut fixer son propre nombre avec `exemplaires` (par exemple pour ne poser qu'un seul Chef pillard). L'intention l'annonce, par exemple « Pose 2× Gobelin éclaireur ». **[à valider]** : les scripts ne posant qu'un monstre à la fois, « nombre de poses par tour » est interprété comme un nombre d'exemplaires.
 
 Le nombre d'emplacements de monstres de l'ennemi (`emplacementsMonstres`) se règle par ennemi. Il ne dépend pas du niveau du joueur, et il est toujours actif (ce n'est pas un levier).
 
-### 16.3 Monstres résistants (`leviers.niveauxEnnemis`, désactivé)
+### 16.3 Monstres résistants (`leviers.niveauxEnnemis`, **activé**)
 
 Dans un script ennemi, une pose ou un sort peut indiquer un `niveau` de 2 ou 3. Les statistiques et les effets sont alors multipliés comme pour une fusion (`fusion.multiplicateur`, ×2 par niveau). Quand le levier est désactivé, toutes les cartes ennemies sont de niveau 1. Le niveau 3 est permis pour l'ennemi, même si le joueur ne peut pas encore fusionner jusqu'au niveau 3.
 
@@ -250,9 +255,11 @@ La **Provocation** fonctionne dans les deux camps : tant qu'un monstre adverse a
 
 Dans les statistiques, la part des dégâts au héros due au bonus est comptée en « enrage », le reste en « monstres ».
 
-### 16.5 Attaque directe du héros ennemi (`leviers.attaqueDirecte`, désactivé)
+### 16.5 Attaque directe du héros ennemi (`leviers.attaqueDirecte`, **activé** depuis les réglages n°1)
 
-À la fin de chaque tour ennemi, même s'il n'a aucun monstre, le héros ennemi inflige au héros du joueur `damage` dégâts, plus `perTurn` par tour ennemi écoulé (soit `damage + perTurn × (tour ennemi − 1)`). Cette attaque ignore la Provocation et ne déclenche pas les pièges. Elle est annoncée dans l'intention. **[à valider]**
+**Règle** : à la fin de chaque tour ennemi, quel que soit l'état du plateau, le héros ennemi inflige au héros du joueur `damage` dégâts (**2** par défaut), plus `perTurn` par tour ennemi écoulé (soit `damage + perTurn × (tour ennemi − 1)`, `perTurn` valant 0 par défaut). Cette attaque **n'est pas bloquée par la Provocation** et ne déclenche pas les pièges. Elle s'applique à tous les ennemis.
+
+Elle est annoncée dans l'intention (« Frappe directe : 2 dégâts »), affichée en rouge dans le récapitulatif « Dernier tour ennemi » au-dessus du plateau ennemi, et comptée en « attaque directe » dans les statistiques de fin de combat.
 
 ### 16.6 Charge sur certains monstres ennemis (`leviers.chargeEnnemie`, désactivé)
 
@@ -265,7 +272,7 @@ Deux ennemis sont fournis, avec des cartes du pool commun. Leurs valeurs sont da
 | | Bande de pillards (Aggro) | Gardien de la crypte (Contrôle) |
 |---|---|---|
 | PV | 20 | 30 **[à valider]** |
-| Emplacements de monstres | 3 | 2 |
+| Emplacements de monstres | 4 | 2 |
 | Poses | 2 exemplaires par pose (levier 2.1) | 1 |
 | Cartes | Gobelins, Fosse à pieux, Chef pillard (Charge, levier 2.5) | Squelette et Garde nain de niveau 2 (levier 2.2, Provocation), Projectile magique, Boule de feu, Contre-sort |
 | IA d'attaque | létal → tuer sans perte → héros | létal → tuer sans perte → plus dangereux |

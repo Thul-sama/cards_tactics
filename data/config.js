@@ -4,7 +4,7 @@ var CONFIG = {
   // --- Économie ---
   orDepart: 0,                                   // [à valider] non précisé par les règles
   orParTour: 3,
-  interets: { tranche: 5, plafond: 3 },          // 1 or par tranche de 5 épargnés, plafonné à 3
+  interets: { tranche: 5, plafond: 1 },          // 1 or par tranche de 5 épargnés, plafonné à 1 (réglages n°1)
   prixRelance: 1,
   prixAchat: { commune: 1, rare: 2, epique: 3, legendaire: 4 }, // légendaire [à valider], aucune carte
   prixVente: { commune: 1, rare: 2, epique: 3, legendaire: 4 },
@@ -54,7 +54,8 @@ var CONFIG = {
     // 2.3 L'ATQ des monstres ennemis augmente de `perTurn` à chaque tour ennemi, à partir du tour ennemi `startTurn`
     enrage: { enabled: true, perTurn: 1, startTurn: 3 },
     // 2.4 Le héros ennemi inflige `damage` au héros joueur à la fin de chaque tour ennemi, +`perTurn` par tour ennemi suivant
-    attaqueDirecte: { enabled: true, damage: 1, perTurn: 0 },
+    attaqueDirecte: { enabled: true, damage: 2, perTurn: 0 },
+
     // 2.5 Les poses marquées `charge: true` dans les scripts (enemies.js) donnent Charge au monstre
     chargeEnnemie: { enabled: true },
     // 3. Qui commence : `firstPlayer` par ennemi (enemies.js). Le joueur reçoit `secondPlayerGold` une fois s'il est second.

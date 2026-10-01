@@ -19,7 +19,11 @@ function melanger(t) {
   }
   return t;
 }
-function log(txt) { J.log.push(txt); if (J.log.length > 60) J.log.shift(); }
+function log(txt) {
+  J.log.push(txt);
+  if (J.log.length > 60) J.log.shift();
+  if (J.combat && J.combat.capture) J.combat.recapEnnemi.push(txt); // récapitulatif du tour ennemi en cours
+}
 
 function instance(id, niveau) {
   if (!CARTE[id]) throw new Error('Carte inconnue : ' + id);
@@ -90,7 +94,7 @@ function chargeEnnemie(act) { return CONFIG.leviers.chargeEnnemie.enabled && !!a
 // Nombre d'exemplaires posés par une action 'pose' (levier 2.1).
 function nbPoses(act) {
   if (CARTE[act.carte].type !== 'monstre' || !CONFIG.leviers.posesMultiples.enabled) return 1;
-  return J.combat.ennemi.def.posesParTour || 1;
+  return act.exemplaires || J.combat.ennemi.def.posesParTour || 1;
 }
 
 // Cibles que l'IA choisirait si le plateau restait tel quel (recalculé à chaque affichage).
@@ -243,6 +247,7 @@ function enregistrerResume(victoire) {
     numero: HISTORIQUE.length + 1,
     ennemi: c.ennemi.nom, victoire: victoire, tours: c.tour,
     orGagne: s.orGagne, orDepense: s.orDepense, orEpargne: J.or, interets: s.interets, ventes: s.ventes,
+    partDepensee: s.orGagne ? Math.round(100 * s.orDepense / s.orGagne) : 0,
     pv: Math.max(0, c.joueur.pv), pvPct: Math.round(100 * Math.max(0, c.joueur.pv) / c.joueur.pvMax),
     ennemisPoses: s.unitesEnnemies.length,
     ennemisAyantAttaque: s.unitesEnnemies.filter(u => u.aAttaque).length,
@@ -584,10 +589,19 @@ function finTour() {
 // ---------- Tour ennemi ----------
 
 function tourEnnemi() {
+  const c = J.combat;
+  c.recapEnnemi = [];
+  c.capture = true;
+  jouerTourEnnemi();
+  c.capture = false;
+}
+
+function jouerTourEnnemi() {
   const c = J.combat, e = c.ennemi;
   changerPhase('ennemi');
   e.monstres.forEach(m => { m.peutAttaquer = true; });
   e.tours++;
+  c.directDernierTour = 0;
   for (const act of actionsEnnemi(e.tours)) {
     if (c.fini) return;
     if (act.action === 'pose') for (let i = nbPoses(act); i > 0; i--) poseEnnemi(act);
@@ -602,6 +616,7 @@ function attaqueDirecte() {
   if (d <= 0) return;
   c.joueur.pv -= d;
   c.stats.degats.direct += d;
+  c.directDernierTour = d;
   log(c.ennemi.nom + ' te frappe directement : ' + d + ' dégâts.');
   verifierFin();
 }
@@ -681,5 +696,7 @@ function poseEnnemi(act) {
   } else if (d.type === 'piege' && e.pieges.length < e.def.emplacementsPieges) {
     e.pieges.push(instance(id, niveauEnnemi(act)));
     log(e.nom + ' pose un piège face cachée.');
+  } else {
+    log(e.nom + ' n\'a plus de place pour poser ' + d.nom + '.');
   }
 }
