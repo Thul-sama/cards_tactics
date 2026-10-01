@@ -19,7 +19,11 @@ function melanger(t) {
   }
   return t;
 }
-function log(txt) { J.log.push(txt); if (J.log.length > 60) J.log.shift(); }
+function log(txt) {
+  J.log.push(txt);
+  if (J.log.length > 60) J.log.shift();
+  if (J.combat && J.combat.recapEnnemi) J.combat.recapEnnemi.push(txt); // récapitulatif du tour ennemi en cours
+}
 
 function instance(id, niveau) {
   if (!CARTE[id]) throw new Error('Carte inconnue : ' + id);
@@ -588,6 +592,8 @@ function tourEnnemi() {
   changerPhase('ennemi');
   e.monstres.forEach(m => { m.peutAttaquer = true; });
   e.tours++;
+  c.recapEnnemi = [];
+  c.directDernierTour = 0;
   for (const act of actionsEnnemi(e.tours)) {
     if (c.fini) return;
     if (act.action === 'pose') for (let i = nbPoses(act); i > 0; i--) poseEnnemi(act);
@@ -602,6 +608,7 @@ function attaqueDirecte() {
   if (d <= 0) return;
   c.joueur.pv -= d;
   c.stats.degats.direct += d;
+  c.directDernierTour = d;
   log(c.ennemi.nom + ' te frappe directement : ' + d + ' dégâts.');
   verifierFin();
 }

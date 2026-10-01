@@ -99,6 +99,15 @@ function texteEnrage() {
     ' (+' + prochain + ' au prochain tour ennemi' + (prochain ? '' : ', commence au tour ennemi ' + L.startTurn) + ')</p>';
 }
 
+// Ce qui s'est passé pendant le dernier tour ennemi, avec la frappe directe mise en évidence.
+function recapEnnemi() {
+  const c = J.combat;
+  if (!c.recapEnnemi || !c.recapEnnemi.length || c.phase === 'ennemi') return '';
+  return '<details class="recap"' + (c.directDernierTour ? ' open' : '') + '><summary>Dernier tour ennemi' +
+    (c.directDernierTour ? ' — <b class="enrage">frappe directe : −' + c.directDernierTour + ' PV</b>' : '') + '</summary><ul>' +
+    c.recapEnnemi.map(l => '<li>' + l + '</li>').join('') + '</ul></details>';
+}
+
 function zoneEnnemi() {
   const c = J.combat, e = c.ennemi;
   let pieges = '';
@@ -109,6 +118,7 @@ function zoneEnnemi() {
     htmlHeros(e, 'he') +
     '<p class="intention">Intention ce tour : <b>' + texteIntention(e.tours + 1) + '</b></p>' +
     texteEnrage() +
+    recapEnnemi() +
     '<div class="rang">' + pieges + '</div>' +
     '<div class="rang">' + e.monstres.map(m => htmlUnite(m, e)).join('') +
     emplacementsVides(e.def.emplacementsMonstres - e.monstres.length) + '</div>' +

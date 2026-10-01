@@ -105,6 +105,7 @@ Jeu de cartes tactique solo, hors ligne, en PvE, avec une structure de roguelike
 | PV du héros du joueur | 20 |
 | Chrono boutique / jeu | 30 s / 15 s |
 | Bande de pillards | 20 PV, 4 emplacements de monstres, 2 monstres posés par tour |
+| Attaque directe du héros ennemi | 2 dégâts par tour ennemi, ignore la Provocation |
 
 ## 11. Pool de départ proposé pour le prototype
 
@@ -253,9 +254,11 @@ La **Provocation** fonctionne dans les deux camps : tant qu'un monstre adverse a
 
 Dans les statistiques, la part des dégâts au héros due au bonus est comptée en « enrage », le reste en « monstres ».
 
-### 16.5 Attaque directe du héros ennemi (`leviers.attaqueDirecte`, désactivé)
+### 16.5 Attaque directe du héros ennemi (`leviers.attaqueDirecte`, **activé** depuis les réglages n°1)
 
-À la fin de chaque tour ennemi, même s'il n'a aucun monstre, le héros ennemi inflige au héros du joueur `damage` dégâts, plus `perTurn` par tour ennemi écoulé (soit `damage + perTurn × (tour ennemi − 1)`). Cette attaque ignore la Provocation et ne déclenche pas les pièges. Elle est annoncée dans l'intention. **[à valider]**
+**Règle** : à la fin de chaque tour ennemi, quel que soit l'état du plateau, le héros ennemi inflige au héros du joueur `damage` dégâts (**2** par défaut), plus `perTurn` par tour ennemi écoulé (soit `damage + perTurn × (tour ennemi − 1)`, `perTurn` valant 0 par défaut). Cette attaque **n'est pas bloquée par la Provocation** et ne déclenche pas les pièges. Elle s'applique à tous les ennemis.
+
+Elle est annoncée dans l'intention (« Frappe directe : 2 dégâts »), affichée en rouge dans le récapitulatif « Dernier tour ennemi » au-dessus du plateau ennemi, et comptée en « attaque directe » dans les statistiques de fin de combat.
 
 ### 16.6 Charge sur certains monstres ennemis (`leviers.chargeEnnemie`, désactivé)
 
