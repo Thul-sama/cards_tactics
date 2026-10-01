@@ -276,3 +276,9 @@ Avec tous les leviers désactivés, les deux ennemis ne posent qu'un exemplaire,
 Le donjon enchaîne les pillards puis la crypte (`donjon`). Pour les tests, un écran permet de **choisir l'ennemi avant chaque combat** (`choixEnnemi: true`) ; l'ennemi prévu par le donjon y est mis en évidence.
 
 Les PV du héros des pillards (20) remplacent les 12 de l'exemple de la section 12.
+
+### 16.8 Intention avec cibles
+
+L'IA de ciblage est décrite à la section 15 ; ses priorités se règlent par ennemi (`ia`), et chaque archétype a la sienne (section 16.7).
+
+Pendant le tour du joueur, l'intention annonce l'action de l'ennemi **et ses cibles**, par exemple « Attaque : Gobelin éclaireur → ton héros ; Chef pillard → Loup des bois » ou « Lance Boule de feu → Ogre ». C'est une **prédiction** : elle est recalculée à chaque changement du plateau, donc le joueur voit comment ses actions modifient les choix de l'ennemi. Elle ne tient pas compte des monstres que l'ennemi posera ce tour-là ni des pièges du joueur. **[à valider]** : annoncer une cible fixe au tour précédent serait incohérent, puisque le joueur modifie le plateau entre-temps.

@@ -93,13 +93,29 @@ function nbPoses(act) {
   return J.combat.ennemi.def.posesParTour || 1;
 }
 
+// Cibles que l'IA choisirait si le plateau restait tel quel (recalculé à chaque affichage).
+function predictionAttaque() {
+  const c = J.combat, e = c.ennemi, bonus = bonusEnrage(e.tours + 1);
+  if (!e.monstres.length) return 'Attaque';
+  let restants = e.monstres.reduce((s, u) => s + u.atq + bonus, 0);
+  return 'Attaque : ' + e.monstres.map(u => {
+    const atq = u.atq + bonus;
+    const ref = choisirCibleIA(e.def.ia.attaques, ciblesAttaque(c.joueur), atq, u.pv, restants);
+    restants -= atq;
+    return nomCarte(u) + ' → ' + nomCible(trouverCible(ref));
+  }).join(' ; ');
+}
+
 function texteIntention(tour) {
   const direct = degatsDirects(tour);
   return actionsEnnemi(tour).map(a => {
-    if (a.action === 'attaque') return 'Attaque';
+    if (a.action === 'attaque') return predictionAttaque();
     const d = CARTE[a.carte];
     const k = { id: a.carte, niveau: niveauEnnemi(a) };
-    if (a.action === 'sort') return 'Lance ' + nomCarte(k);
+    if (a.action === 'sort') {
+      const ref = cibleSortEnnemi(d, k.niveau);
+      return 'Lance ' + nomCarte(k) + (ref ? ' → ' + nomCible(trouverCible(ref)) : '');
+    }
     const n = nbPoses(a);
     if (d.type === 'monstre') return 'Pose ' + (n > 1 ? n + '× ' : '') + nomCarte(k) + ' (' + texteCarte(k.id, k.niveau) + (chargeEnnemie(a) ? ' · Charge' : '') + ')';
     return 'Pose un piège face cachée';
@@ -608,18 +624,21 @@ function choisirCibleIA(priorites, options, degats, pvAttaquant, degatsTotaux) {
 
 // Sort ennemi. Dégâts : ciblés par l'IA (ia.sorts) parmi les cibles du joueur.
 // Soin : son propre héros. Bénédiction : son monstre à l'ATQ la plus haute. [à valider]
-function sortEnnemi(act) {
-  const c = J.combat, e = c.ennemi, d = CARTE[act.carte], k = instance(act.carte, niveauEnnemi(act));
-  let ref = null;
+function cibleSortEnnemi(d, niveau) {
+  const c = J.combat, e = c.ennemi;
   if (d.effet.type === 'degats') {
     const options = ['hj'].concat(c.joueur.monstres.map(u => 'm' + u.uid));
-    const degats = d.effet.valeur * mult(k.niveau);
-    ref = choisirCibleIA(e.def.ia.sorts, options, degats, null, degats);
-  } else if (d.effet.type === 'soin') {
-    ref = 'he';
-  } else if (d.effet.type === 'buff' && e.monstres.length) {
-    ref = 'm' + e.monstres.reduce((best, u) => (u.atq > best.atq ? u : best)).uid;
+    const degats = d.effet.valeur * mult(niveau);
+    return choisirCibleIA(e.def.ia.sorts, options, degats, null, degats);
   }
+  if (d.effet.type === 'soin') return 'he';
+  if (d.effet.type === 'buff' && e.monstres.length) return 'm' + e.monstres.reduce((best, u) => (u.atq > best.atq ? u : best)).uid;
+  return null;
+}
+
+function sortEnnemi(act) {
+  const c = J.combat, e = c.ennemi, d = CARTE[act.carte], k = instance(act.carte, niveauEnnemi(act));
+  const ref = cibleSortEnnemi(d, k.niveau);
   if (!ref) return;
   if (declencherPiege(c.joueur, 'sort', null)) {
     log(e.nom + ' lance ' + nomCarte(k) + ', mais le sort est annulé.');
