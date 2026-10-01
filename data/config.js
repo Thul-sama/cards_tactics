@@ -48,15 +48,15 @@ var CONFIG = {
     // Résumé de fin de combat et historique de la session
     statistiques: { enabled: true },
     // 2.1 Chaque pose de monstre du script pose `posesParTour` exemplaires (valeur par ennemi, enemies.js)
-    posesMultiples: { enabled: false },
+    posesMultiples: { enabled: true },
     // 2.2 Les cartes ennemies utilisent le `niveau` (2 ou 3) indiqué dans leur script (enemies.js)
-    niveauxEnnemis: { enabled: false },
+    niveauxEnnemis: { enabled: true },
     // 2.3 L'ATQ des monstres ennemis augmente de `perTurn` à chaque tour ennemi, à partir du tour ennemi `startTurn`
-    enrage: { enabled: false, perTurn: 1, startTurn: 3 },
+    enrage: { enabled: true, perTurn: 1, startTurn: 3 },
     // 2.4 Le héros ennemi inflige `damage` au héros joueur à la fin de chaque tour ennemi, +`perTurn` par tour ennemi suivant
-    attaqueDirecte: { enabled: false, damage: 1, perTurn: 0 },
+    attaqueDirecte: { enabled: true, damage: 1, perTurn: 0 },
     // 2.5 Les poses marquées `charge: true` dans les scripts (enemies.js) donnent Charge au monstre
-    chargeEnnemie: { enabled: false },
+    chargeEnnemie: { enabled: true },
     // 3. Qui commence : `firstPlayer` par ennemi (enemies.js). Le joueur reçoit `secondPlayerGold` une fois s'il est second.
     ordreDepart: { enabled: false, secondPlayerGold: 1 }
   },
