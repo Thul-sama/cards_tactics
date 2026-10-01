@@ -115,11 +115,20 @@ function nouvelleRun() {
     combatIndex: 0, combat: null, ecran: 'combat',
     log: [], pause: false, selection: null
   };
-  demarrerCombat();
+  preparerCombat();
 }
 
-function demarrerCombat() {
-  const id = CONFIG.donjon[J.combatIndex];
+// Avant chaque combat : écran de choix de l'ennemi (pour les tests) ou ennemi prévu par le donjon.
+function preparerCombat() {
+  if (CONFIG.choixEnnemi) J.ecran = 'choixEnnemi';
+  else demarrerCombat(CONFIG.donjon[J.combatIndex]);
+}
+
+function choisirEnnemi(id) {
+  if (J.ecran === 'choixEnnemi') demarrerCombat(id);
+}
+
+function demarrerCombat(id) {
   const def = ENNEMIS[id];
   if (!def) throw new Error('Ennemi inconnu : ' + id);
   J.ecran = 'combat';
@@ -230,7 +239,7 @@ function verifierFin() {
 }
 
 function combatSuivant() {
-  if (J.ecran === 'entreCombats') demarrerCombat();
+  if (J.ecran === 'entreCombats') preparerCombat();
 }
 
 // ---------- Phase de boutique ----------

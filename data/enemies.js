@@ -4,7 +4,7 @@
 // Actions : { action: 'pose', carte: '<id>' }  — ignorée s'il n'y a plus d'emplacement libre
 //           option niveau: 2 ou 3 (levier 2.2) sur une pose ou un sort
 //           option charge: true (levier 2.5) sur une pose de monstre
-//           { action: 'sort', carte: '<id>' }  — lance un sort direct (aucun script ne l'utilise encore)
+//           { action: 'sort', carte: '<id>' }  — lance un sort direct, cible choisie par l'IA
 //           { action: 'attaque' }              — tous les monstres prêts attaquent
 
 // IA de ciblage : priorités testées dans l'ordre, la première qui trouve une cible l'emporte.
@@ -14,19 +14,28 @@
 //   'heros'         : vise le héros du joueur
 // La Provocation est toujours respectée pour les attaques. Si rien ne correspond : le héros.
 // attaques : ciblage des monstres. sorts : ciblage des sorts de dégâts.
-var IA_STANDARD = {
+// Chaque ennemi a aussi un `archetype` (texte affiché) et ses propres valeurs.
+// L'IA de chaque archétype : les deux commencent par 'letal' et 'tuerSansPerte', puis
+// l'aggro vise le héros et le contrôle attaque le monstre le plus dangereux.
+var IA_AGGRO = {
   attaques: ['letal', 'tuerSansPerte', 'heros'],
+  sorts: ['letal', 'plusDangereux']
+};
+var IA_CONTROLE = {
+  attaques: ['letal', 'tuerSansPerte', 'plusDangereux'],
   sorts: ['letal', 'plusDangereux']
 };
 
 var ENNEMIS = {
+  // Aggro : beaucoup de petits monstres posés vite (2 par pose avec le levier 2.1), qui visent le héros, et peu de PV.
   pillards: {
     nom: 'Bande de pillards',
+    archetype: 'Aggro',
     pv: 20,
     emplacementsMonstres: 3, // indépendant du niveau du joueur [à valider]
     emplacementsPieges: 1,
-    posesParTour: 1,         // levier 2.1 : exemplaires posés à chaque pose de monstre
-    ia: IA_STANDARD,
+    posesParTour: 2,         // levier 2.1 : exemplaires posés à chaque pose de monstre
+    ia: IA_AGGRO,
     script: [
       [{ action: 'pose', carte: 'gobelin' }],
       [{ action: 'pose', carte: 'gobelin' }, { action: 'attaque' }],
@@ -34,5 +43,25 @@ var ENNEMIS = {
       [{ action: 'pose', carte: 'chef_pillard', charge: true }, { action: 'attaque' }]
     ],
     ensuite: [{ action: 'attaque' }, { action: 'pose', carte: 'gobelin' }]
+  },
+
+  // Contrôle : peu de monstres mais résistants (niveau 2 avec le levier 2.2, Provocation),
+  // des sorts qui visent les monstres du joueur, et beaucoup de PV. [à valider]
+  crypte: {
+    nom: 'Gardien de la crypte',
+    archetype: 'Contrôle',
+    pv: 30,
+    emplacementsMonstres: 2,
+    emplacementsPieges: 1,
+    posesParTour: 1,
+    ia: IA_CONTROLE,
+    script: [
+      [{ action: 'pose', carte: 'squelette', niveau: 2 }],
+      [{ action: 'sort', carte: 'projectile' }, { action: 'attaque' }],
+      [{ action: 'pose', carte: 'garde_nain', niveau: 2 }, { action: 'attaque' }],
+      [{ action: 'sort', carte: 'boule_feu' }, { action: 'attaque' }],
+      [{ action: 'pose', carte: 'contre_sort' }, { action: 'attaque' }]
+    ],
+    ensuite: [{ action: 'sort', carte: 'projectile' }, { action: 'attaque' }, { action: 'pose', carte: 'squelette', niveau: 2 }]
   }
 };

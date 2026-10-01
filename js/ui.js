@@ -41,6 +41,7 @@ function rendre() {
   el('pause').hidden = !J.pause;
   el('btn-historique').hidden = !CONFIG.leviers.statistiques.enabled;
   const z = el('jeu');
+  if (J.ecran === 'choixEnnemi') { z.innerHTML = ecranChoixEnnemi(); return; }
   if (J.ecran !== 'combat') { z.innerHTML = ecranFin(); return; }
   z.innerHTML = zoneEnnemi() + zoneJoueur() + panneau() + zoneMain() + zoneLog();
 }
@@ -189,6 +190,18 @@ function zoneLog() {
   return '<section class="zone log"><ol>' + J.log.slice(-8).reverse().map(l => '<li>' + l + '</li>').join('') + '</ol></section>';
 }
 
+function ecranChoixEnnemi() {
+  const prevu = CONFIG.donjon[J.combatIndex];
+  const choix = Object.keys(ENNEMIS).map(id => {
+    const d = ENNEMIS[id];
+    return bloc('carte' + (id === prevu ? ' sel' : ''), 'data-action="choisir-ennemi" data-id="' + id + '"',
+      '<b>' + d.nom + '</b><small>' + (d.archetype || '') + (id === prevu ? ' · prévu par le donjon' : '') + '</small>' +
+      '<span>' + d.pv + ' PV · ' + d.emplacementsMonstres + ' emplacements</span>');
+  }).join('');
+  return '<section class="zone panneau"><h2>Combat ' + (J.combatIndex + 1) + '/' + CONFIG.donjon.length + ' : choisis l\'ennemi</h2>' +
+    '<div class="rang">' + choix + '</div></section>';
+}
+
 function ecranFin() {
   let titre, btn;
   if (J.ecran === 'entreCombats') {
@@ -278,6 +291,7 @@ const ACTIONS = {
   'poser': () => poser(J.selection.uid),
   'fin-tour': finTour,
   'suivant': combatSuivant,
+  'choisir-ennemi': d => choisirEnnemi(d.id),
   'nouvelle-run': nouvelleRun,
   'pause': () => { J.pause = !J.pause; },
   'historique': () => { modal = 'historique'; rendreModal(); },

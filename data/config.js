@@ -60,5 +60,6 @@ var CONFIG = {
   },
 
   // --- Donjon : suite des ennemis (clés de data/enemies.js) ---
-  donjon: ['pillards', 'pillards']               // [à valider]
+  donjon: ['pillards', 'crypte'],                // [à valider]
+  choixEnnemi: true                              // outil de test : choisir l'ennemi avant chaque combat
 };

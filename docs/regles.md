@@ -257,3 +257,22 @@ Dans les statistiques, la part des dégâts au héros due au bonus est comptée 
 ### 16.6 Charge sur certains monstres ennemis (`leviers.chargeEnnemie`, désactivé)
 
 Une pose du script peut porter `charge: true`. Quand le levier est actif, le monstre gagne Charge : il peut attaquer dès le tour où il est posé, à condition que l'action « attaque » vienne après la pose dans le script. L'intention l'annonce. Exemple fourni : le Chef pillard des pillards, au tour 4.
+
+### 16.7 Archétypes d'ennemis
+
+Deux ennemis sont fournis, avec des cartes du pool commun. Leurs valeurs sont dans `data/enemies.js`.
+
+| | Bande de pillards (Aggro) | Gardien de la crypte (Contrôle) |
+|---|---|---|
+| PV | 20 | 30 **[à valider]** |
+| Emplacements de monstres | 3 | 2 |
+| Poses | 2 exemplaires par pose (levier 2.1) | 1 |
+| Cartes | Gobelins, Fosse à pieux, Chef pillard (Charge, levier 2.5) | Squelette et Garde nain de niveau 2 (levier 2.2, Provocation), Projectile magique, Boule de feu, Contre-sort |
+| IA d'attaque | létal → tuer sans perte → héros | létal → tuer sans perte → plus dangereux |
+| Sorts | — | létal → plus dangereux |
+
+Avec tous les leviers désactivés, les deux ennemis ne posent qu'un exemplaire, de niveau 1, sans Charge. Les archétypes ne prennent tout leur sens qu'avec les leviers 2.1, 2.2 et 2.5 activés.
+
+Le donjon enchaîne les pillards puis la crypte (`donjon`). Pour les tests, un écran permet de **choisir l'ennemi avant chaque combat** (`choixEnnemi: true`) ; l'ennemi prévu par le donjon y est mis en évidence.
+
+Les PV du héros des pillards (20) remplacent les 12 de l'exemple de la section 12.
