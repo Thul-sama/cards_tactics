@@ -104,6 +104,7 @@ Jeu de cartes tactique solo, hors ligne, en PvE, avec une structure de roguelike
 | Prix de vente | 1 pour une commune, 2 pour une rare, 3 pour une épique |
 | PV du héros du joueur | 20 |
 | Chrono boutique / jeu | 30 s / 15 s |
+| Bande de pillards | 20 PV, 4 emplacements de monstres, 2 monstres posés par tour |
 
 ## 11. Pool de départ proposé pour le prototype
 
@@ -139,15 +140,17 @@ Jeu de cartes tactique solo, hors ligne, en PvE, avec une structure de roguelike
 
 L'ennemi a un **deck prédéfini** et **annonce son intention** au tour précédent. Ses cartes viennent du **même pool que le joueur** (section 11).
 
-Exemple, « Bande de pillards » (héros à 20 PV) :
+Exemple, « Bande de pillards » (héros à 20 PV, 4 emplacements de monstres, 2 exemplaires par pose de monstre avec le levier 2.1) :
 
 | Tour | Action |
 |---|---|
-| 1 | Pose un Gobelin (2/1) |
-| 2 | Pose un Gobelin (2/1) et attaque |
-| 3 | Pose une Fosse à pieux (face cachée) et attaque |
-| 4 | Pose un Chef pillard (4/4) et attaque |
-| 5 et suivants | Attaque, et pose un Gobelin s'il a un emplacement libre |
+| 1 | Pose 2 Gobelins (2/1) |
+| 2 | Pose 2 Gobelins et attaque |
+| 3 | Pose une Fosse à pieux (face cachée), pose 2 Gobelins et attaque |
+| 4 | Pose un Chef pillard (4/4, Charge avec le levier 2.5) et un Gobelin, puis attaque |
+| 5 et suivants | Attaque, puis pose 2 Gobelins dans les emplacements libres |
+
+**Les scripts bouclent** : une fois les tours scriptés joués, la séquence `ensuite` se répète à chaque tour jusqu'à la fin du combat, pour que l'ennemi continue à agir. Une pose sans emplacement libre est annulée, et le journal l'indique.
 
 ## 13. Points ouverts
 
@@ -216,7 +219,7 @@ Les priorités sont paramétrables pour chaque ennemi dans `data/enemies.js` (`i
 
 ## 16. Leviers de pression ennemie et diagnostic
 
-Ces outils servent à équilibrer. Chaque levier se règle dans `data/config.js` (`leviers`) ou dans `data/enemies.js`, et possède un interrupteur `enabled`. **Par défaut, tous les leviers sont désactivés, sauf les statistiques.**
+Ces outils servent à équilibrer. Chaque levier se règle dans `data/config.js` (`leviers`) ou dans `data/enemies.js`, et possède un interrupteur `enabled`. Au départ, tous les leviers étaient désactivés sauf les statistiques. Les réglages n°1 activent les poses multiples (16.2) et l'attaque directe (16.5).
 
 ### 16.1 Statistiques de diagnostic (`leviers.statistiques`, activé)
 
@@ -232,9 +235,9 @@ Ces outils servent à équilibrer. Chaque levier se règle dans `data/config.js`
 
 Le bouton **Historique** liste les combats de la session, pour comparer plusieurs parties. Rien n'est sauvegardé : recharger la page efface l'historique.
 
-### 16.2 Plusieurs poses par tour (`leviers.posesMultiples`, désactivé)
+### 16.2 Plusieurs poses par tour (`leviers.posesMultiples`, **activé** depuis les réglages n°1)
 
-Quand le levier est actif, chaque action « pose un monstre » du script pose `posesParTour` exemplaires de ce monstre, dans la limite des emplacements libres. L'intention l'annonce, par exemple « Pose 2× Gobelin éclaireur ». **[à valider]** : les scripts ne posant qu'un monstre à la fois, « nombre de poses par tour » est interprété comme un nombre d'exemplaires.
+Quand le levier est actif, chaque action « pose un monstre » du script pose `posesParTour` exemplaires de ce monstre, dans la limite des emplacements libres. Une pose peut fixer son propre nombre avec `exemplaires` (par exemple pour ne poser qu'un seul Chef pillard). L'intention l'annonce, par exemple « Pose 2× Gobelin éclaireur ». **[à valider]** : les scripts ne posant qu'un monstre à la fois, « nombre de poses par tour » est interprété comme un nombre d'exemplaires.
 
 Le nombre d'emplacements de monstres de l'ennemi (`emplacementsMonstres`) se règle par ennemi. Il ne dépend pas du niveau du joueur, et il est toujours actif (ce n'est pas un levier).
 
@@ -265,7 +268,7 @@ Deux ennemis sont fournis, avec des cartes du pool commun. Leurs valeurs sont da
 | | Bande de pillards (Aggro) | Gardien de la crypte (Contrôle) |
 |---|---|---|
 | PV | 20 | 30 **[à valider]** |
-| Emplacements de monstres | 3 | 2 |
+| Emplacements de monstres | 4 | 2 |
 | Poses | 2 exemplaires par pose (levier 2.1) | 1 |
 | Cartes | Gobelins, Fosse à pieux, Chef pillard (Charge, levier 2.5) | Squelette et Garde nain de niveau 2 (levier 2.2, Provocation), Projectile magique, Boule de feu, Contre-sort |
 | IA d'attaque | létal → tuer sans perte → héros | létal → tuer sans perte → plus dangereux |

@@ -48,7 +48,7 @@ var CONFIG = {
     // Résumé de fin de combat et historique de la session
     statistiques: { enabled: true },
     // 2.1 Chaque pose de monstre du script pose `posesParTour` exemplaires (valeur par ennemi, enemies.js)
-    posesMultiples: { enabled: false },
+    posesMultiples: { enabled: true },
     // 2.2 Les cartes ennemies utilisent le `niveau` (2 ou 3) indiqué dans leur script (enemies.js)
     niveauxEnnemis: { enabled: false },
     // 2.3 L'ATQ des monstres ennemis augmente de `perTurn` à chaque tour ennemi, à partir du tour ennemi `startTurn`

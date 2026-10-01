@@ -4,6 +4,7 @@
 // Actions : { action: 'pose', carte: '<id>' }  — ignorée s'il n'y a plus d'emplacement libre
 //           option niveau: 2 ou 3 (levier 2.2) sur une pose ou un sort
 //           option charge: true (levier 2.5) sur une pose de monstre
+//           option exemplaires: N (levier 2.1) remplace posesParTour pour cette pose
 //           { action: 'sort', carte: '<id>' }  — lance un sort direct, cible choisie par l'IA
 //           { action: 'attaque' }              — tous les monstres prêts attaquent
 
@@ -32,7 +33,7 @@ var ENNEMIS = {
     nom: 'Bande de pillards',
     archetype: 'Aggro',
     pv: 20,
-    emplacementsMonstres: 3, // indépendant du niveau du joueur [à valider]
+    emplacementsMonstres: 4, // indépendant du niveau du joueur ; 4 pour que 2 poses par tour restent possibles
     emplacementsPieges: 1,
     posesParTour: 2,         // levier 2.1 : exemplaires posés à chaque pose de monstre
     firstPlayer: 'enemy',    // levier 3 : 'player', 'enemy' ou 'random'
@@ -40,8 +41,8 @@ var ENNEMIS = {
     script: [
       [{ action: 'pose', carte: 'gobelin' }],
       [{ action: 'pose', carte: 'gobelin' }, { action: 'attaque' }],
-      [{ action: 'pose', carte: 'fosse' }, { action: 'attaque' }],
-      [{ action: 'pose', carte: 'chef_pillard', charge: true }, { action: 'attaque' }]
+      [{ action: 'pose', carte: 'fosse' }, { action: 'pose', carte: 'gobelin' }, { action: 'attaque' }],
+      [{ action: 'pose', carte: 'chef_pillard', charge: true, exemplaires: 1 }, { action: 'pose', carte: 'gobelin', exemplaires: 1 }, { action: 'attaque' }]
     ],
     ensuite: [{ action: 'attaque' }, { action: 'pose', carte: 'gobelin' }]
   },

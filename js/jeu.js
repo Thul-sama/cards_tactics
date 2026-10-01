@@ -90,7 +90,7 @@ function chargeEnnemie(act) { return CONFIG.leviers.chargeEnnemie.enabled && !!a
 // Nombre d'exemplaires posés par une action 'pose' (levier 2.1).
 function nbPoses(act) {
   if (CARTE[act.carte].type !== 'monstre' || !CONFIG.leviers.posesMultiples.enabled) return 1;
-  return J.combat.ennemi.def.posesParTour || 1;
+  return act.exemplaires || J.combat.ennemi.def.posesParTour || 1;
 }
 
 // Cibles que l'IA choisirait si le plateau restait tel quel (recalculé à chaque affichage).
@@ -681,5 +681,7 @@ function poseEnnemi(act) {
   } else if (d.type === 'piege' && e.pieges.length < e.def.emplacementsPieges) {
     e.pieges.push(instance(id, niveauEnnemi(act)));
     log(e.nom + ' pose un piège face cachée.');
+  } else {
+    log(e.nom + ' n\'a plus de place pour poser ' + d.nom + '.');
   }
 }
