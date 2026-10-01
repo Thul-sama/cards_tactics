@@ -139,7 +139,7 @@ Jeu de cartes tactique solo, hors ligne, en PvE, avec une structure de roguelike
 
 L'ennemi a un **deck prédéfini** et **annonce son intention** au tour précédent. Ses cartes viennent du **même pool que le joueur** (section 11).
 
-Exemple, « Bande de pillards » (héros à 12 PV) :
+Exemple, « Bande de pillards » (héros à 20 PV) :
 
 | Tour | Action |
 |---|---|

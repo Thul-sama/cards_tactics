@@ -20,7 +20,7 @@ var IA_STANDARD = {
 var ENNEMIS = {
   pillards: {
     nom: 'Bande de pillards',
-    pv: 12,
+    pv: 20,
     emplacementsMonstres: 3, // [à valider] non précisé par les règles
     emplacementsPieges: 1,
     ia: IA_STANDARD,
