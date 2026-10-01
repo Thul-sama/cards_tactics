@@ -5,6 +5,7 @@ const CARTE = {};
 CARTES.forEach(d => { CARTE[d.id] = d; });
 
 let J = null;   // état de la run
+const HISTORIQUE = []; // résumés des combats de la session (non sauvegardés)
 let uidSuivant = 1;
 
 // ---------- Outils ----------
@@ -63,14 +64,62 @@ function actionsEnnemi(tour) {
   return tour <= d.script.length ? d.script[tour - 1] : d.ensuite;
 }
 
+// Bonus d'ATQ des monstres ennemis (levier 2.3), pour le n-ième tour ennemi (par défaut : le dernier joué).
+function bonusEnrage(tourEnnemi) {
+  const L = CONFIG.leviers.enrage, t = tourEnnemi === undefined ? J.combat.ennemi.tours : tourEnnemi;
+  return L.enabled && t >= L.startTurn ? (t - L.startTurn + 1) * L.perTurn : 0;
+}
+
+// Dégâts de l'attaque directe du héros ennemi au n-ième tour ennemi (levier 2.4).
+function degatsDirects(tourEnnemi) {
+  const L = CONFIG.leviers.attaqueDirecte;
+  return L.enabled ? L.damage + L.perTurn * (tourEnnemi - 1) : 0;
+}
+
+// ATQ réelle d'un monstre, enrage compris.
+function atqEff(u) { return u.atq + (u.ennemi ? bonusEnrage() : 0); }
+
+// Niveau d'une carte posée ou lancée par l'ennemi (levier 2.2).
+function niveauEnnemi(act) {
+  return CONFIG.leviers.niveauxEnnemis.enabled ? (act.niveau || 1) : 1;
+}
+
+// Charge donnée par le script (levier 2.5).
+function chargeEnnemie(act) { return CONFIG.leviers.chargeEnnemie.enabled && !!act.charge; }
+
+// Nombre d'exemplaires posés par une action 'pose' (levier 2.1).
+function nbPoses(act) {
+  if (CARTE[act.carte].type !== 'monstre' || !CONFIG.leviers.posesMultiples.enabled) return 1;
+  return J.combat.ennemi.def.posesParTour || 1;
+}
+
+// Cibles que l'IA choisirait si le plateau restait tel quel (recalculé à chaque affichage).
+function predictionAttaque() {
+  const c = J.combat, e = c.ennemi, bonus = bonusEnrage(e.tours + 1);
+  if (!e.monstres.length) return 'Attaque';
+  let restants = e.monstres.reduce((s, u) => s + u.atq + bonus, 0);
+  return 'Attaque : ' + e.monstres.map(u => {
+    const atq = u.atq + bonus;
+    const ref = choisirCibleIA(e.def.ia.attaques, ciblesAttaque(c.joueur), atq, u.pv, restants);
+    restants -= atq;
+    return nomCarte(u) + ' → ' + nomCible(trouverCible(ref));
+  }).join(' ; ');
+}
+
 function texteIntention(tour) {
+  const direct = degatsDirects(tour);
   return actionsEnnemi(tour).map(a => {
-    if (a.action === 'attaque') return 'Attaque';
+    if (a.action === 'attaque') return predictionAttaque();
     const d = CARTE[a.carte];
-    if (a.action === 'sort') return 'Lance ' + d.nom;
-    if (d.type === 'monstre') return 'Pose ' + d.nom + ' (' + d.atq + '/' + d.pv + ')';
+    const k = { id: a.carte, niveau: niveauEnnemi(a) };
+    if (a.action === 'sort') {
+      const ref = cibleSortEnnemi(d, k.niveau);
+      return 'Lance ' + nomCarte(k) + (ref ? ' → ' + nomCible(trouverCible(ref)) : '');
+    }
+    const n = nbPoses(a);
+    if (d.type === 'monstre') return 'Pose ' + (n > 1 ? n + '× ' : '') + nomCarte(k) + ' (' + texteCarte(k.id, k.niveau) + (chargeEnnemie(a) ? ' · Charge' : '') + ')';
     return 'Pose un piège face cachée';
-  }).join(', puis ');
+  }).concat(direct > 0 ? ['Frappe directe : ' + direct + ' dégâts'] : []).join(', puis ');
 }
 
 // ---------- Run et combats ----------
@@ -82,11 +131,20 @@ function nouvelleRun() {
     combatIndex: 0, combat: null, ecran: 'combat',
     log: [], pause: false, selection: null
   };
-  demarrerCombat();
+  preparerCombat();
 }
 
-function demarrerCombat() {
-  const id = CONFIG.donjon[J.combatIndex];
+// Avant chaque combat : écran de choix de l'ennemi (pour les tests) ou ennemi prévu par le donjon.
+function preparerCombat() {
+  if (CONFIG.choixEnnemi) J.ecran = 'choixEnnemi';
+  else demarrerCombat(CONFIG.donjon[J.combatIndex]);
+}
+
+function choisirEnnemi(id) {
+  if (J.ecran === 'choixEnnemi') demarrerCombat(id);
+}
+
+function demarrerCombat(id) {
   const def = ENNEMIS[id];
   if (!def) throw new Error('Ennemi inconnu : ' + id);
   J.ecran = 'combat';
@@ -95,13 +153,20 @@ function demarrerCombat() {
     tour: 0, phase: 'mulligan', fini: false, chrono: 0,
     deck: melanger(J.collection.slice()), main: [], defausse: [],
     joueur: { estJoueur: true, nom: 'Toi', pv: CONFIG.pvHeros, pvMax: CONFIG.pvHeros, monstres: [], pieges: [] },
-    ennemi: { estJoueur: false, nom: def.nom, def: def, pv: def.pv, pvMax: def.pv, monstres: [], pieges: [] },
-    boutique: [], pioches: 0, sorts: 0, mulligans: CONFIG.mulligan
+    ennemi: { estJoueur: false, nom: def.nom, def: def, pv: def.pv, pvMax: def.pv, monstres: [], pieges: [], tours: 0 },
+    boutique: [], pioches: 0, sorts: 0, mulligans: CONFIG.mulligan,
+    monstresEnnemisDebutJeu: 0,
+    stats: {
+      orGagne: 0, orDepense: 0, interets: 0, ventes: 0,
+      unitesEnnemies: [], toursNettoyes: 0,
+      degats: { monstres: 0, sorts: 0, direct: 0, enrage: 0 },
+      achetees: {}, jouees: {}
+    }
   };
   log('— Combat ' + (J.combatIndex + 1) + '/' + CONFIG.donjon.length + ' : ' + def.nom + ' —');
   for (let i = 0; i < CONFIG.piocheDebutCombat; i++) piocherCarte();
   verifierFusions();
-  if (!peutMulligan()) debutTour();
+  if (!peutMulligan()) premierTour();
 }
 
 function piocherCarte() {
@@ -132,7 +197,23 @@ function mulligan(uid) {
 }
 
 function commencerCombat() {
-  if (J.combat.phase === 'mulligan') debutTour();
+  if (J.combat.phase === 'mulligan') premierTour();
+}
+
+// Ordre de départ (levier 3) : si l'ennemi commence, il joue un tour complet avant le premier tour du joueur,
+// et le joueur reçoit une seule fois le bonus d'or du second joueur.
+function premierTour() {
+  const c = J.combat, L = CONFIG.leviers.ordreDepart;
+  let premier = L.enabled ? (c.ennemi.def.firstPlayer || 'player') : 'player';
+  if (premier === 'random') premier = Math.random() < 0.5 ? 'player' : 'enemy';
+  if (premier === 'enemy') {
+    J.or += L.secondPlayerGold;
+    c.stats.orGagne += L.secondPlayerGold;
+    log(c.ennemi.nom + ' commence. Bonus de second joueur : +' + L.secondPlayerGold + ' or.');
+    tourEnnemi();
+    if (c.fini) return;
+  }
+  debutTour();
 }
 
 function changerPhase(p) {
@@ -154,16 +235,35 @@ function tick(dt) {
   return true;
 }
 
+function compter(table, nom) { table[nom] = (table[nom] || 0) + 1; }
+
+function enregistrerResume(victoire) {
+  const c = J.combat, s = c.stats;
+  HISTORIQUE.push({
+    numero: HISTORIQUE.length + 1,
+    ennemi: c.ennemi.nom, victoire: victoire, tours: c.tour,
+    orGagne: s.orGagne, orDepense: s.orDepense, orEpargne: J.or, interets: s.interets, ventes: s.ventes,
+    pv: Math.max(0, c.joueur.pv), pvPct: Math.round(100 * Math.max(0, c.joueur.pv) / c.joueur.pvMax),
+    ennemisPoses: s.unitesEnnemies.length,
+    ennemisAyantAttaque: s.unitesEnnemies.filter(u => u.aAttaque).length,
+    toursNettoyes: s.toursNettoyes,
+    degats: Object.assign({}, s.degats),
+    achetees: s.achetees, jouees: s.jouees
+  });
+}
+
 function verifierFin() {
   const c = J.combat;
   if (c.fini) return true;
   if (c.ennemi.pv <= 0) {
     c.fini = true;
+    enregistrerResume(true);
     J.combatIndex++;
     J.ecran = J.combatIndex >= CONFIG.donjon.length ? 'runGagnee' : 'entreCombats';
     log('Victoire contre ' + c.ennemi.nom + ' !');
   } else if (c.joueur.pv <= 0) {
     c.fini = true;
+    enregistrerResume(false);
     J.ecran = 'runPerdue';
     log('Défaite.');
   }
@@ -171,7 +271,7 @@ function verifierFin() {
 }
 
 function combatSuivant() {
-  if (J.ecran === 'entreCombats') demarrerCombat();
+  if (J.ecran === 'entreCombats') preparerCombat();
 }
 
 // ---------- Phase de boutique ----------
@@ -181,6 +281,8 @@ function debutTour() {
   c.tour++;
   const interets = Math.min(Math.floor(J.or / CONFIG.interets.tranche), CONFIG.interets.plafond);
   J.or += CONFIG.orParTour + interets;
+  c.stats.orGagne += CONFIG.orParTour + interets;
+  c.stats.interets += interets;
   log('Tour ' + c.tour + ' : +' + CONFIG.orParTour + ' or, +' + interets + ' d\'intérêts.');
   c.boutique = tirerBoutique();
   c.pioches = 0;
@@ -225,6 +327,8 @@ function acheter(i) {
   if (!peutAcheter(i)) return;
   const id = c.boutique[i];
   J.or -= prixAchat(id);
+  c.stats.orDepense += prixAchat(id);
+  compter(c.stats.achetees, CARTE[id].nom);
   const k = instance(id);
   J.collection.push(k);
   c.main.push(k);
@@ -238,6 +342,7 @@ function peutRelancer() { return J.combat.phase === 'boutique' && J.or >= CONFIG
 function relancer() {
   if (!peutRelancer()) return;
   J.or -= CONFIG.prixRelance;
+  J.combat.stats.orDepense += CONFIG.prixRelance;
   J.combat.boutique = tirerBoutique();
   log('Relance de la boutique (-' + CONFIG.prixRelance + ' or).');
 }
@@ -263,6 +368,7 @@ function peutMonterNiveau() {
 function monterNiveau() {
   if (!peutMonterNiveau()) return;
   J.or -= prixNiveauSuivant();
+  J.combat.stats.orDepense += prixNiveauSuivant();
   J.niveau++;
   log('Niveau ' + J.niveau + ' atteint.');
 }
@@ -275,6 +381,8 @@ function vendre(uid) {
   c.main = c.main.filter(x => x !== k);
   J.collection = J.collection.filter(x => x !== k);
   J.or += prixVente(k);
+  c.stats.orGagne += prixVente(k);
+  c.stats.ventes += prixVente(k);
   J.selection = null;
   log('Vente : ' + nomCarte(k) + ' (+' + prixVente(k) + ' or).');
 }
@@ -306,6 +414,7 @@ function finBoutique() {
   if (c.phase !== 'boutique') return;
   changerPhase('jeu');
   c.sorts = 0;
+  c.monstresEnnemisDebutJeu = c.ennemi.monstres.length;
   c.joueur.monstres.forEach(m => { m.peutAttaquer = true; });
 }
 
@@ -326,6 +435,7 @@ function poser(uid) {
   if (!k || !peutPoser(k)) return;
   retirerDeMain(k);
   J.selection = null;
+  compter(c.stats.jouees, CARTE[k.id].nom);
   if (CARTE[k.id].type === 'monstre') {
     c.joueur.monstres.push(unite(k));
     log('Tu poses ' + nomCarte(k) + '.');
@@ -387,6 +497,7 @@ function lancerSort(uid, ref) {
   c.defausse.push(k);
   c.sorts++;
   J.selection = null;
+  compter(c.stats.jouees, CARTE[k.id].nom);
   if (declencherPiege(c.ennemi, 'sort', null)) {
     log(nomCarte(k) + ' est annulé.');
     return;
@@ -436,12 +547,18 @@ function resoudreAttaque(attaquantCamp, a, defenseur, ref) {
     verifierFin();
     return;
   }
+  a.aAttaque = true;
+  const atqA = atqEff(a);
   if (!cible.unite) {
-    defenseur.pv -= a.atq;
-    log(qui + ' attaque ' + nomCible(cible) + ' : ' + a.atq + ' dégâts.');
+    defenseur.pv -= atqA;
+    if (defenseur.estJoueur) {
+      J.combat.stats.degats.monstres += a.atq;
+      J.combat.stats.degats.enrage += atqA - a.atq;
+    }
+    log(qui + ' attaque ' + nomCible(cible) + ' : ' + atqA + ' dégâts.');
   } else {
-    cible.unite.pv -= a.atq;
-    a.pv -= cible.unite.atq;
+    cible.unite.pv -= atqA;
+    a.pv -= atqEff(cible.unite);
     log(qui + ' attaque ' + nomCible(cible) + '.');
   }
   nettoyerMorts();
@@ -458,6 +575,8 @@ function attaquer(uid, ref) {
 function finTour() {
   const c = J.combat;
   if (c.phase !== 'jeu') return;
+  // Plateau ennemi entièrement nettoyé pendant ce tour (il avait au moins un monstre au début).
+  if (c.monstresEnnemisDebutJeu > 0 && c.ennemi.monstres.length === 0) c.stats.toursNettoyes++;
   tourEnnemi();
   if (!c.fini) debutTour();
 }
@@ -468,12 +587,23 @@ function tourEnnemi() {
   const c = J.combat, e = c.ennemi;
   changerPhase('ennemi');
   e.monstres.forEach(m => { m.peutAttaquer = true; });
-  for (const act of actionsEnnemi(c.tour)) {
+  e.tours++;
+  for (const act of actionsEnnemi(e.tours)) {
     if (c.fini) return;
-    if (act.action === 'pose') poseEnnemi(act.carte);
-    if (act.action === 'sort') sortEnnemi(act.carte);
+    if (act.action === 'pose') for (let i = nbPoses(act); i > 0; i--) poseEnnemi(act);
+    if (act.action === 'sort') sortEnnemi(act);
     if (act.action === 'attaque') attaquesEnnemi();
   }
+  if (!c.fini) attaqueDirecte();
+}
+
+function attaqueDirecte() {
+  const c = J.combat, d = degatsDirects(c.ennemi.tours);
+  if (d <= 0) return;
+  c.joueur.pv -= d;
+  c.stats.degats.direct += d;
+  log(c.ennemi.nom + ' te frappe directement : ' + d + ' dégâts.');
+  verifierFin();
 }
 
 // Les monstres prêts attaquent un par un ; chaque cible est choisie par l'IA (ia.attaques).
@@ -483,8 +613,8 @@ function attaquesEnnemi() {
     if (c.fini) return;
     if (!e.monstres.includes(m) || !m.peutAttaquer) continue;
     // Dégâts que les attaquants restants (celui-ci compris) peuvent encore infliger ce tour.
-    const restants = e.monstres.filter(u => u.peutAttaquer).reduce((s, u) => s + u.atq, 0);
-    const ref = choisirCibleIA(e.def.ia.attaques, ciblesAttaque(c.joueur), m.atq, m.pv, restants);
+    const restants = e.monstres.filter(u => u.peutAttaquer).reduce((s, u) => s + atqEff(u), 0);
+    const ref = choisirCibleIA(e.def.ia.attaques, ciblesAttaque(c.joueur), atqEff(m), m.pv, restants);
     resoudreAttaque(e, m, c.joueur, ref);
   }
 }
@@ -510,36 +640,46 @@ function choisirCibleIA(priorites, options, degats, pvAttaquant, degatsTotaux) {
 
 // Sort ennemi. Dégâts : ciblés par l'IA (ia.sorts) parmi les cibles du joueur.
 // Soin : son propre héros. Bénédiction : son monstre à l'ATQ la plus haute. [à valider]
-function sortEnnemi(id) {
-  const c = J.combat, e = c.ennemi, d = CARTE[id], k = instance(id);
-  let ref = null;
+function cibleSortEnnemi(d, niveau) {
+  const c = J.combat, e = c.ennemi;
   if (d.effet.type === 'degats') {
     const options = ['hj'].concat(c.joueur.monstres.map(u => 'm' + u.uid));
-    ref = choisirCibleIA(e.def.ia.sorts, options, d.effet.valeur, null, d.effet.valeur);
-  } else if (d.effet.type === 'soin') {
-    ref = 'he';
-  } else if (d.effet.type === 'buff' && e.monstres.length) {
-    ref = 'm' + e.monstres.reduce((best, u) => (u.atq > best.atq ? u : best)).uid;
+    const degats = d.effet.valeur * mult(niveau);
+    return choisirCibleIA(e.def.ia.sorts, options, degats, null, degats);
   }
+  if (d.effet.type === 'soin') return 'he';
+  if (d.effet.type === 'buff' && e.monstres.length) return 'm' + e.monstres.reduce((best, u) => (u.atq > best.atq ? u : best)).uid;
+  return null;
+}
+
+function sortEnnemi(act) {
+  const c = J.combat, e = c.ennemi, d = CARTE[act.carte], k = instance(act.carte, niveauEnnemi(act));
+  const ref = cibleSortEnnemi(d, k.niveau);
   if (!ref) return;
   if (declencherPiege(c.joueur, 'sort', null)) {
-    log(e.nom + ' lance ' + d.nom + ', mais le sort est annulé.');
+    log(e.nom + ' lance ' + nomCarte(k) + ', mais le sort est annulé.');
     return;
   }
   const cible = trouverCible(ref);
+  const pvAvant = c.joueur.pv;
   appliquerEffet(d.effet, mult(k.niveau), cible);
-  log(e.nom + ' lance ' + d.nom + ' sur ' + nomCible(cible) + '.');
+  if (c.joueur.pv < pvAvant) c.stats.degats.sorts += pvAvant - c.joueur.pv;
+  log(e.nom + ' lance ' + nomCarte(k) + ' sur ' + nomCible(cible) + '.');
   nettoyerMorts();
   verifierFin();
 }
 
-function poseEnnemi(id) {
-  const e = J.combat.ennemi, d = CARTE[id];
+function poseEnnemi(act) {
+  const id = act.carte, e = J.combat.ennemi, d = CARTE[id];
   if (d.type === 'monstre' && e.monstres.length < e.def.emplacementsMonstres) {
-    e.monstres.push(unite(instance(id)));
-    log(e.nom + ' pose ' + d.nom + '.');
+    const u = unite(instance(id, niveauEnnemi(act)));
+    u.ennemi = true;
+    if (chargeEnnemie(act)) { u.charge = true; u.peutAttaquer = true; }
+    e.monstres.push(u);
+    J.combat.stats.unitesEnnemies.push(u);
+    log(e.nom + ' pose ' + nomCarte(u) + '.');
   } else if (d.type === 'piege' && e.pieges.length < e.def.emplacementsPieges) {
-    e.pieges.push(instance(id));
+    e.pieges.push(instance(id, niveauEnnemi(act)));
     log(e.nom + ' pose un piège face cachée.');
   }
 }

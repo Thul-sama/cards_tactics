@@ -5,6 +5,7 @@ const TYPE = { monstre: 'monstre', sort: 'sort', piege: 'piège' };
 const PHASE = { mulligan: 'Mulligan', boutique: 'Boutique', jeu: 'Jeu', ennemi: 'Tour ennemi' };
 
 const el = id => document.getElementById(id);
+let modal = null; // fenêtre ouverte : null, 'historique' ou 'reglages'. Le chrono est arrêté tant qu'elle est ouverte.
 
 // Un bloc cliquable si une action est fournie, sinon un simple rectangle.
 function bloc(classes, action, contenu, desactive) {
@@ -38,7 +39,9 @@ function estCible(ref) {
 function rendre() {
   rendreBarre();
   el('pause').hidden = !J.pause;
+  el('btn-historique').hidden = !CONFIG.leviers.statistiques.enabled;
   const z = el('jeu');
+  if (J.ecran === 'choixEnnemi') { z.innerHTML = ecranChoixEnnemi(); return; }
   if (J.ecran !== 'combat') { z.innerHTML = ecranFin(); return; }
   z.innerHTML = zoneEnnemi() + zoneJoueur() + panneau() + zoneMain() + zoneLog();
 }
@@ -75,7 +78,9 @@ function htmlUnite(m, camp) {
   if (m.provocation) etats.push('Provocation');
   if (m.charge) etats.push('Charge');
   if (camp.estJoueur && c.phase === 'jeu') etats.push(m.peutAttaquer ? 'Prêt' : 'Ne peut pas attaquer');
-  const contenu = '<b>' + nomCarte(m) + '</b><span class="stats">' + m.atq + ' / ' + m.pv + '</span>' +
+  const enrage = atqEff(m) - m.atq;
+  if (enrage) etats.push('enrage +' + enrage);
+  const contenu = '<b>' + nomCarte(m) + '</b><span class="stats">' + atqEff(m) + ' / ' + m.pv + '</span>' +
     '<small>' + etats.join(' · ') + '</small>';
   return bloc('carte monstre' + (sel ? ' sel' : '') + (cible ? ' cible' : '') + (m.peutAttaquer && camp.estJoueur ? ' pret' : ''), action, contenu);
 }
@@ -86,6 +91,14 @@ function emplacementsVides(n, piege) {
   return h;
 }
 
+function texteEnrage() {
+  const L = CONFIG.leviers.enrage;
+  if (!L.enabled) return '';
+  const prochain = bonusEnrage(J.combat.ennemi.tours + 1);
+  return '<p class="intention enrage">Enrage : <b>+' + bonusEnrage() + ' ATQ</b> pour les monstres ennemis' +
+    ' (+' + prochain + ' au prochain tour ennemi' + (prochain ? '' : ', commence au tour ennemi ' + L.startTurn) + ')</p>';
+}
+
 function zoneEnnemi() {
   const c = J.combat, e = c.ennemi;
   let pieges = '';
@@ -94,7 +107,8 @@ function zoneEnnemi() {
   }
   return '<section class="zone ennemi">' +
     htmlHeros(e, 'he') +
-    '<p class="intention">Intention ce tour : <b>' + texteIntention(c.tour || 1) + '</b></p>' +
+    '<p class="intention">Intention ce tour : <b>' + texteIntention(e.tours + 1) + '</b></p>' +
+    texteEnrage() +
     '<div class="rang">' + pieges + '</div>' +
     '<div class="rang">' + e.monstres.map(m => htmlUnite(m, e)).join('') +
     emplacementsVides(e.def.emplacementsMonstres - e.monstres.length) + '</div>' +
@@ -176,6 +190,18 @@ function zoneLog() {
   return '<section class="zone log"><ol>' + J.log.slice(-8).reverse().map(l => '<li>' + l + '</li>').join('') + '</ol></section>';
 }
 
+function ecranChoixEnnemi() {
+  const prevu = CONFIG.donjon[J.combatIndex];
+  const choix = Object.keys(ENNEMIS).map(id => {
+    const d = ENNEMIS[id];
+    return bloc('carte' + (id === prevu ? ' sel' : ''), 'data-action="choisir-ennemi" data-id="' + id + '"',
+      '<b>' + d.nom + '</b><small>' + (d.archetype || '') + (id === prevu ? ' · prévu par le donjon' : '') + '</small>' +
+      '<span>' + d.pv + ' PV · ' + d.emplacementsMonstres + ' emplacements</span>');
+  }).join('');
+  return '<section class="zone panneau"><h2>Combat ' + (J.combatIndex + 1) + '/' + CONFIG.donjon.length + ' : choisis l\'ennemi</h2>' +
+    '<div class="rang">' + choix + '</div></section>';
+}
+
 function ecranFin() {
   let titre, btn;
   if (J.ecran === 'entreCombats') {
@@ -188,7 +214,140 @@ function ecranFin() {
   return '<section class="zone panneau"><h2>' + titre + '</h2>' +
     '<p>Or : ' + J.or + ' · Niveau ' + J.niveau + ' · Cartes possédées : ' + J.collection.length + '</p>' +
     '<p>' + J.collection.map(nomCarte).join(', ') + '</p>' +
-    '<div class="actions">' + btn + '</div></section>' + zoneLog();
+    '<div class="actions">' + btn + '</div></section>' +
+    (CONFIG.leviers.statistiques.enabled && HISTORIQUE.length ? '<section class="zone">' + htmlResume(HISTORIQUE[HISTORIQUE.length - 1]) + '</section>' : '') +
+    zoneLog();
+}
+
+// ---------- Statistiques ----------
+
+function listeCartes(t) {
+  const noms = Object.keys(t);
+  return noms.length ? noms.map(n => n + (t[n] > 1 ? ' ×' + t[n] : '')).join(', ') : '—';
+}
+
+function htmlResume(r) {
+  const d = r.degats, total = d.monstres + d.sorts + d.direct + d.enrage;
+  const ligne = (k, v) => '<tr><th>' + k + '</th><td>' + v + '</td></tr>';
+  return '<h2>Combat ' + r.numero + ' : ' + (r.victoire ? 'victoire' : 'défaite') + ' contre ' + r.ennemi + '</h2>' +
+    '<table class="resume">' +
+    ligne('Tours', r.tours) +
+    ligne('Or', 'gagné ' + r.orGagne + ' (dont intérêts ' + r.interets + ', ventes ' + r.ventes + ') · dépensé ' + r.orDepense + ' · épargné ' + r.orEpargne) +
+    ligne('PV restants', r.pv + ' (' + r.pvPct + ' %)') +
+    ligne('Monstres ennemis', r.ennemisPoses + ' posés, ' + r.ennemisAyantAttaque + ' ont attaqué au moins une fois') +
+    ligne('Plateau ennemi nettoyé', r.toursNettoyes + ' tour(s) sur ' + r.tours) +
+    ligne('Dégâts reçus', total + ' (monstres ' + d.monstres + ', sorts ' + d.sorts + ', attaque directe ' + d.direct + ', enrage ' + d.enrage + ')') +
+    ligne('Cartes achetées', listeCartes(r.achetees)) +
+    ligne('Cartes jouées', listeCartes(r.jouees)) +
+    '</table>';
+}
+
+function htmlHistorique() {
+  if (!HISTORIQUE.length) return '<p>Aucun combat terminé pendant cette session.</p>';
+  return '<table class="resume"><tr><th>#</th><th>Ennemi</th><th>Issue</th><th>Tours</th><th>PV</th><th>Nettoyé</th><th>Dégâts</th></tr>' +
+    HISTORIQUE.map(r => {
+      const d = r.degats;
+      return '<tr><td>' + r.numero + '</td><td>' + r.ennemi + '</td><td>' + (r.victoire ? 'V' : 'D') + '</td><td>' + r.tours +
+        '</td><td>' + r.pvPct + ' %</td><td>' + r.toursNettoyes + '/' + r.tours + '</td><td>' + (d.monstres + d.sorts + d.direct + d.enrage) + '</td></tr>';
+    }).join('') + '</table>' +
+    HISTORIQUE.slice().reverse().map(r => '<details><summary>Détail du combat ' + r.numero + '</summary>' + htmlResume(r) + '</details>').join('');
+}
+
+// ---------- Panneau de réglage ----------
+// Modifie CONFIG et ENNEMIS en mémoire : rien n'est écrit dans les fichiers.
+
+const LIBELLES_LEVIERS = {
+  statistiques: 'Statistiques de diagnostic',
+  posesMultiples: '2.1 Plusieurs poses par tour',
+  niveauxEnnemis: '2.2 Monstres résistants (niveaux)',
+  enrage: '2.3 Enrage',
+  attaqueDirecte: '2.4 Attaque directe',
+  chargeEnnemie: '2.5 Charge ennemie',
+  ordreDepart: '3. Ordre de départ'
+};
+
+function champ(libelle, attrs, valeur) {
+  if (typeof valeur === 'boolean') {
+    return '<label class="champ"><input type="checkbox" ' + attrs + (valeur ? ' checked' : '') + '> ' + libelle + '</label>';
+  }
+  if (typeof valeur === 'number') {
+    return '<label class="champ">' + libelle + ' <input type="number" step="any" ' + attrs + ' value="' + valeur + '"></label>';
+  }
+  if (Array.isArray(valeur)) {
+    return '<label class="champ">' + libelle + ' <input type="text" data-liste="1" ' + attrs + ' value="' + valeur.join(', ') + '"></label>';
+  }
+  return '';
+}
+
+function htmlReglages() {
+  let h = '<p class="aide">Les changements s\'appliquent tout de suite, pour cette session seulement. Les PV des ennemis comptent à partir du prochain combat.</p>';
+  for (const nom of Object.keys(CONFIG.leviers)) {
+    const L = CONFIG.leviers[nom];
+    h += '<fieldset><legend>' + (LIBELLES_LEVIERS[nom] || nom) + '</legend>' +
+      Object.keys(L).map(k => champ(k === 'enabled' ? 'activé' : k, 'data-chemin="leviers.' + nom + '.' + k + '"', L[k])).join('') +
+      '</fieldset>';
+  }
+  h += '<fieldset><legend>Outils</legend>' + champ('choix de l\'ennemi avant chaque combat', 'data-chemin="choixEnnemi"', CONFIG.choixEnnemi) + '</fieldset>';
+  for (const id of Object.keys(ENNEMIS)) {
+    const d = ENNEMIS[id], a = 'data-ennemi="' + id + '" data-chemin="';
+    const premier = ['player', 'enemy', 'random'].map(v => '<option' + (d.firstPlayer === v ? ' selected' : '') + '>' + v + '</option>').join('');
+    h += '<fieldset><legend>' + d.nom + ' (' + (d.archetype || '') + ')</legend>' +
+      ['pv', 'emplacementsMonstres', 'emplacementsPieges', 'posesParTour'].map(k => champ(k, a + k + '"', d[k] || 0)).join('') +
+      '<label class="champ">firstPlayer <select ' + a + 'firstPlayer">' + premier + '</select></label>' +
+      champ('ia.attaques', a + 'ia.attaques"', d.ia.attaques) +
+      champ('ia.sorts', a + 'ia.sorts"', d.ia.sorts) +
+      '</fieldset>';
+  }
+  return h + '<div class="actions">' +
+    bouton('Copier la config', 'data-action="copier" data-quoi="config"') +
+    bouton('Copier les ennemis', 'data-action="copier" data-quoi="ennemis"') +
+    '<span id="copie-statut" class="aide"></span></div>' +
+    '<textarea id="export" readonly rows="6" placeholder="Le texte copié apparaît ici."></textarea>' +
+    '<p class="aide">Le texte exporté remplace le contenu de data/config.js ou data/enemies.js. Les commentaires des fichiers ne sont pas conservés.</p>';
+}
+
+function exporter(quoi) {
+  if (quoi === 'config') return '// Exporté depuis le panneau de réglage.\nvar CONFIG = ' + JSON.stringify(CONFIG, null, 2) + ';\n';
+  return '// Exporté depuis le panneau de réglage.\nvar ENNEMIS = ' + JSON.stringify(ENNEMIS, null, 2) + ';\n';
+}
+
+function copier(quoi) {
+  const zone = el('export'), statut = el('copie-statut');
+  zone.value = exporter(quoi);
+  const secours = () => {
+    zone.select();
+    let ok = false;
+    try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+    statut.textContent = ok ? 'Copié.' : 'Copie impossible : sélectionne le texte ci-dessous.';
+  };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(zone.value).then(() => { statut.textContent = 'Copié.'; }, secours);
+  } else secours();
+}
+
+document.addEventListener('change', ev => {
+  const i = ev.target;
+  if (!i.dataset || !i.dataset.chemin) return;
+  let v;
+  if (i.type === 'checkbox') v = i.checked;
+  else if (i.type === 'number') { v = parseFloat(i.value); if (!isFinite(v)) return; }
+  else if (i.dataset.liste) v = i.value.split(',').map(x => x.trim()).filter(Boolean);
+  else v = i.value;
+  const cles = i.dataset.chemin.split('.'), derniere = cles.pop();
+  const obj = cles.reduce((o, k) => o[k], i.dataset.ennemi ? ENNEMIS[i.dataset.ennemi] : CONFIG);
+  obj[derniere] = v;
+  rendre();
+});
+
+// Contenu de la fenêtre. Reconstruit seulement à l'ouverture, pour ne pas perdre la saisie en cours.
+function rendreModal() {
+  el('modal').hidden = !modal;
+  if (!modal) return;
+  let titre = '', contenu = '';
+  if (modal === 'historique') { titre = 'Historique de la session'; contenu = htmlHistorique(); }
+  if (modal === 'reglages') { titre = 'Réglages (session uniquement)'; contenu = htmlReglages(); }
+  el('modal-contenu').innerHTML = '<h2>' + titre + '</h2>' + contenu +
+    '<div class="actions">' + bouton('Fermer', 'data-action="fermer-modal"', false, 'principal') + '</div>';
 }
 
 // ---------- Interactions ----------
@@ -219,8 +378,13 @@ const ACTIONS = {
   'poser': () => poser(J.selection.uid),
   'fin-tour': finTour,
   'suivant': combatSuivant,
+  'choisir-ennemi': d => choisirEnnemi(d.id),
   'nouvelle-run': nouvelleRun,
-  'pause': () => { J.pause = !J.pause; }
+  'pause': () => { J.pause = !J.pause; },
+  'historique': () => { modal = 'historique'; rendreModal(); },
+  'reglages': () => { modal = 'reglages'; rendreModal(); },
+  'copier': d => copier(d.quoi),
+  'fermer-modal': () => { modal = null; rendreModal(); }
 };
 
 document.addEventListener('click', ev => {
@@ -228,6 +392,7 @@ document.addEventListener('click', ev => {
   if (!cible || cible.disabled) return;
   const a = cible.dataset.action;
   if (J.pause && a !== 'pause') return;
+  if (modal && !cible.closest('#modal')) return;
   ACTIONS[a](cible.dataset);
   rendre();
 });
@@ -242,6 +407,7 @@ setInterval(() => {
   const maintenant = Date.now();
   const dt = (maintenant - dernierTick) / 1000;
   dernierTick = maintenant;
+  if (modal) return;
   if (tick(dt)) rendre(); else if (J && J.combat) majChrono();
 }, 200);
 
