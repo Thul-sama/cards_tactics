@@ -201,8 +201,9 @@ L'IA choisit seulement les **cibles**. Ce que l'ennemi pose ou lance reste défi
 
 1. **Létal** : il attaque le héros si les dégâts cumulés des monstres qui n'ont pas encore attaqué ce tour suffisent à le tuer.
 2. **Tuer sans perte** : il tue un monstre du joueur sans perdre l'attaquant, c'est-à-dire si l'ATQ de la cible est inférieure à ses propres PV. S'il a le choix, il vise le plus dangereux.
-3. **Le plus dangereux** : il attaque le monstre du joueur qui a l'ATQ la plus haute, même si l'échange lui est défavorable.
-4. Si rien ne correspond, il attaque le héros.
+3. **Héros** : sinon, il attaque le héros.
+
+La priorité « le plus dangereux » (attaquer le monstre du joueur qui a l'ATQ la plus haute, même à perte) existe, mais elle n'est pas utilisée : en simulation, elle faisait sacrifier ses monstres à l'ennemi, qui ne gagnait aucun combat.
 
 La Provocation est toujours respectée, même quand une attaque sur le héros serait létale. L'IA ignore les pièges cachés du joueur. **[à valider]**
 

@@ -13,7 +13,7 @@
 // La Provocation est toujours respectée pour les attaques. Si rien ne correspond : le héros.
 // attaques : ciblage des monstres. sorts : ciblage des sorts de dégâts.
 var IA_STANDARD = {
-  attaques: ['letal', 'tuerSansPerte', 'plusDangereux'],
+  attaques: ['letal', 'tuerSansPerte', 'heros'],
   sorts: ['letal', 'plusDangereux']
 };
 
