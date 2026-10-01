@@ -70,6 +70,12 @@ function bonusEnrage(tourEnnemi) {
   return L.enabled && t >= L.startTurn ? (t - L.startTurn + 1) * L.perTurn : 0;
 }
 
+// Dégâts de l'attaque directe du héros ennemi au n-ième tour ennemi (levier 2.4).
+function degatsDirects(tourEnnemi) {
+  const L = CONFIG.leviers.attaqueDirecte;
+  return L.enabled ? L.damage + L.perTurn * (tourEnnemi - 1) : 0;
+}
+
 // ATQ réelle d'un monstre, enrage compris.
 function atqEff(u) { return u.atq + (u.ennemi ? bonusEnrage() : 0); }
 
@@ -85,6 +91,7 @@ function nbPoses(act) {
 }
 
 function texteIntention(tour) {
+  const direct = degatsDirects(tour);
   return actionsEnnemi(tour).map(a => {
     if (a.action === 'attaque') return 'Attaque';
     const d = CARTE[a.carte];
@@ -93,7 +100,7 @@ function texteIntention(tour) {
     const n = nbPoses(a);
     if (d.type === 'monstre') return 'Pose ' + (n > 1 ? n + '× ' : '') + nomCarte(k) + ' (' + texteCarte(k.id, k.niveau) + ')';
     return 'Pose un piège face cachée';
-  }).join(', puis ');
+  }).concat(direct > 0 ? ['Frappe directe : ' + direct + ' dégâts'] : []).join(', puis ');
 }
 
 // ---------- Run et combats ----------
@@ -543,6 +550,16 @@ function tourEnnemi() {
     if (act.action === 'sort') sortEnnemi(act);
     if (act.action === 'attaque') attaquesEnnemi();
   }
+  if (!c.fini) attaqueDirecte();
+}
+
+function attaqueDirecte() {
+  const c = J.combat, d = degatsDirects(c.ennemi.tours);
+  if (d <= 0) return;
+  c.joueur.pv -= d;
+  c.stats.degats.direct += d;
+  log(c.ennemi.nom + ' te frappe directement : ' + d + ' dégâts.');
+  verifierFin();
 }
 
 // Les monstres prêts attaquent un par un ; chaque cible est choisie par l'IA (ia.attaques).

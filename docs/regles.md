@@ -249,3 +249,7 @@ La **Provocation** fonctionne dans les deux camps : tant qu'un monstre adverse a
 À partir du tour ennemi `startTurn`, l'ATQ de tous les monstres ennemis augmente de `perTurn` à chaque tour ennemi : +1 au tour `startTurn`, +2 au suivant, et ainsi de suite. Le bonus compte aussi pour la riposte quand le joueur attaque un monstre ennemi. Le bonus en cours et celui du prochain tour sont affichés dans la zone ennemie. Les tours sont comptés **côté ennemi** : c'est son propre compteur qui fait avancer son script et son enrage. **[à valider]**
 
 Dans les statistiques, la part des dégâts au héros due au bonus est comptée en « enrage », le reste en « monstres ».
+
+### 16.5 Attaque directe du héros ennemi (`leviers.attaqueDirecte`, désactivé)
+
+À la fin de chaque tour ennemi, même s'il n'a aucun monstre, le héros ennemi inflige au héros du joueur `damage` dégâts, plus `perTurn` par tour ennemi écoulé (soit `damage + perTurn × (tour ennemi − 1)`). Cette attaque ignore la Provocation et ne déclenche pas les pièges. Elle est annoncée dans l'intention. **[à valider]**

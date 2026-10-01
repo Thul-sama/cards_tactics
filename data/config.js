@@ -52,7 +52,9 @@ var CONFIG = {
     // 2.2 Les cartes ennemies utilisent le `niveau` (2 ou 3) indiqué dans leur script (enemies.js)
     niveauxEnnemis: { enabled: false },
     // 2.3 L'ATQ des monstres ennemis augmente de `perTurn` à chaque tour ennemi, à partir du tour ennemi `startTurn`
-    enrage: { enabled: false, perTurn: 1, startTurn: 3 }
+    enrage: { enabled: false, perTurn: 1, startTurn: 3 },
+    // 2.4 Le héros ennemi inflige `damage` au héros joueur à la fin de chaque tour ennemi, +`perTurn` par tour ennemi suivant
+    attaqueDirecte: { enabled: false, damage: 1, perTurn: 0 }
   },
 
   // --- Donjon : suite des ennemis (clés de data/enemies.js) ---
