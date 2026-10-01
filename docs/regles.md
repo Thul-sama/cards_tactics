@@ -213,3 +213,21 @@ La Provocation est toujours respectée, même quand une attaque sur le héros se
 - Soin : son propre héros. Bénédiction : son monstre à l'ATQ la plus haute. **[à valider]**
 
 Les priorités sont paramétrables pour chaque ennemi dans `data/enemies.js` (`ia.attaques` et `ia.sorts`, valeurs possibles : `letal`, `tuerSansPerte`, `plusDangereux`, `heros`). Par exemple, `['letal', 'heros']` donne un profil agressif qui frappe toujours le héros.
+
+## 16. Leviers de pression ennemie et diagnostic
+
+Ces outils servent à équilibrer. Chaque levier se règle dans `data/config.js` (`leviers`) ou dans `data/enemies.js`, et possède un interrupteur `enabled`. **Par défaut, tous les leviers sont désactivés, sauf les statistiques.**
+
+### 16.1 Statistiques de diagnostic (`leviers.statistiques`, activé)
+
+À la fin de chaque combat, un résumé affiche :
+
+- le nombre de tours ;
+- l'or gagné (revenu, intérêts et ventes), dépensé (achats, relances, niveaux) et épargné (or restant), ainsi que les intérêts touchés ;
+- les PV restants du joueur, en valeur et en pourcentage ;
+- le nombre de monstres ennemis posés, et combien ont attaqué au moins une fois ;
+- le nombre de tours où le plateau ennemi a été **entièrement nettoyé** à la fin du tour du joueur. Un tour ne compte que si l'ennemi avait au moins un monstre au début de la phase de jeu. **[à valider]**
+- les dégâts reçus par le héros joueur, par source : monstres, sorts, attaque directe, enrage ;
+- les cartes achetées et les cartes jouées.
+
+Le bouton **Historique** liste les combats de la session, pour comparer plusieurs parties. Rien n'est sauvegardé : recharger la page efface l'historique.

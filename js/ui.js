@@ -5,6 +5,7 @@ const TYPE = { monstre: 'monstre', sort: 'sort', piege: 'piège' };
 const PHASE = { mulligan: 'Mulligan', boutique: 'Boutique', jeu: 'Jeu', ennemi: 'Tour ennemi' };
 
 const el = id => document.getElementById(id);
+let modal = null; // fenêtre ouverte : null, 'historique' ou 'reglages'. Le chrono est arrêté tant qu'elle est ouverte.
 
 // Un bloc cliquable si une action est fournie, sinon un simple rectangle.
 function bloc(classes, action, contenu, desactive) {
@@ -38,6 +39,7 @@ function estCible(ref) {
 function rendre() {
   rendreBarre();
   el('pause').hidden = !J.pause;
+  el('btn-historique').hidden = !CONFIG.leviers.statistiques.enabled;
   const z = el('jeu');
   if (J.ecran !== 'combat') { z.innerHTML = ecranFin(); return; }
   z.innerHTML = zoneEnnemi() + zoneJoueur() + panneau() + zoneMain() + zoneLog();
@@ -188,7 +190,53 @@ function ecranFin() {
   return '<section class="zone panneau"><h2>' + titre + '</h2>' +
     '<p>Or : ' + J.or + ' · Niveau ' + J.niveau + ' · Cartes possédées : ' + J.collection.length + '</p>' +
     '<p>' + J.collection.map(nomCarte).join(', ') + '</p>' +
-    '<div class="actions">' + btn + '</div></section>' + zoneLog();
+    '<div class="actions">' + btn + '</div></section>' +
+    (CONFIG.leviers.statistiques.enabled && HISTORIQUE.length ? '<section class="zone">' + htmlResume(HISTORIQUE[HISTORIQUE.length - 1]) + '</section>' : '') +
+    zoneLog();
+}
+
+// ---------- Statistiques ----------
+
+function listeCartes(t) {
+  const noms = Object.keys(t);
+  return noms.length ? noms.map(n => n + (t[n] > 1 ? ' ×' + t[n] : '')).join(', ') : '—';
+}
+
+function htmlResume(r) {
+  const d = r.degats, total = d.monstres + d.sorts + d.direct + d.enrage;
+  const ligne = (k, v) => '<tr><th>' + k + '</th><td>' + v + '</td></tr>';
+  return '<h2>Combat ' + r.numero + ' : ' + (r.victoire ? 'victoire' : 'défaite') + ' contre ' + r.ennemi + '</h2>' +
+    '<table class="resume">' +
+    ligne('Tours', r.tours) +
+    ligne('Or', 'gagné ' + r.orGagne + ' (dont intérêts ' + r.interets + ', ventes ' + r.ventes + ') · dépensé ' + r.orDepense + ' · épargné ' + r.orEpargne) +
+    ligne('PV restants', r.pv + ' (' + r.pvPct + ' %)') +
+    ligne('Monstres ennemis', r.ennemisPoses + ' posés, ' + r.ennemisAyantAttaque + ' ont attaqué au moins une fois') +
+    ligne('Plateau ennemi nettoyé', r.toursNettoyes + ' tour(s) sur ' + r.tours) +
+    ligne('Dégâts reçus', total + ' (monstres ' + d.monstres + ', sorts ' + d.sorts + ', attaque directe ' + d.direct + ', enrage ' + d.enrage + ')') +
+    ligne('Cartes achetées', listeCartes(r.achetees)) +
+    ligne('Cartes jouées', listeCartes(r.jouees)) +
+    '</table>';
+}
+
+function htmlHistorique() {
+  if (!HISTORIQUE.length) return '<p>Aucun combat terminé pendant cette session.</p>';
+  return '<table class="resume"><tr><th>#</th><th>Ennemi</th><th>Issue</th><th>Tours</th><th>PV</th><th>Nettoyé</th><th>Dégâts</th></tr>' +
+    HISTORIQUE.map(r => {
+      const d = r.degats;
+      return '<tr><td>' + r.numero + '</td><td>' + r.ennemi + '</td><td>' + (r.victoire ? 'V' : 'D') + '</td><td>' + r.tours +
+        '</td><td>' + r.pvPct + ' %</td><td>' + r.toursNettoyes + '/' + r.tours + '</td><td>' + (d.monstres + d.sorts + d.direct + d.enrage) + '</td></tr>';
+    }).join('') + '</table>' +
+    HISTORIQUE.slice().reverse().map(r => '<details><summary>Détail du combat ' + r.numero + '</summary>' + htmlResume(r) + '</details>').join('');
+}
+
+// Contenu de la fenêtre. Reconstruit seulement à l'ouverture, pour ne pas perdre la saisie en cours.
+function rendreModal() {
+  el('modal').hidden = !modal;
+  if (!modal) return;
+  let titre = '', contenu = '';
+  if (modal === 'historique') { titre = 'Historique de la session'; contenu = htmlHistorique(); }
+  el('modal-contenu').innerHTML = '<h2>' + titre + '</h2>' + contenu +
+    '<div class="actions">' + bouton('Fermer', 'data-action="fermer-modal"', false, 'principal') + '</div>';
 }
 
 // ---------- Interactions ----------
@@ -220,7 +268,9 @@ const ACTIONS = {
   'fin-tour': finTour,
   'suivant': combatSuivant,
   'nouvelle-run': nouvelleRun,
-  'pause': () => { J.pause = !J.pause; }
+  'pause': () => { J.pause = !J.pause; },
+  'historique': () => { modal = 'historique'; rendreModal(); },
+  'fermer-modal': () => { modal = null; rendreModal(); }
 };
 
 document.addEventListener('click', ev => {
@@ -228,6 +278,7 @@ document.addEventListener('click', ev => {
   if (!cible || cible.disabled) return;
   const a = cible.dataset.action;
   if (J.pause && a !== 'pause') return;
+  if (modal && !cible.closest('#modal')) return;
   ACTIONS[a](cible.dataset);
   rendre();
 });
@@ -242,6 +293,7 @@ setInterval(() => {
   const maintenant = Date.now();
   const dt = (maintenant - dernierTick) / 1000;
   dernierTick = maintenant;
+  if (modal) return;
   if (tick(dt)) rendre(); else if (J && J.combat) majChrono();
 }, 200);
 

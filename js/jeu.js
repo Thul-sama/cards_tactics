@@ -5,6 +5,7 @@ const CARTE = {};
 CARTES.forEach(d => { CARTE[d.id] = d; });
 
 let J = null;   // état de la run
+const HISTORIQUE = []; // résumés des combats de la session (non sauvegardés)
 let uidSuivant = 1;
 
 // ---------- Outils ----------
@@ -96,7 +97,14 @@ function demarrerCombat() {
     deck: melanger(J.collection.slice()), main: [], defausse: [],
     joueur: { estJoueur: true, nom: 'Toi', pv: CONFIG.pvHeros, pvMax: CONFIG.pvHeros, monstres: [], pieges: [] },
     ennemi: { estJoueur: false, nom: def.nom, def: def, pv: def.pv, pvMax: def.pv, monstres: [], pieges: [] },
-    boutique: [], pioches: 0, sorts: 0, mulligans: CONFIG.mulligan
+    boutique: [], pioches: 0, sorts: 0, mulligans: CONFIG.mulligan,
+    monstresEnnemisDebutJeu: 0,
+    stats: {
+      orGagne: 0, orDepense: 0, interets: 0, ventes: 0,
+      unitesEnnemies: [], toursNettoyes: 0,
+      degats: { monstres: 0, sorts: 0, direct: 0, enrage: 0 },
+      achetees: {}, jouees: {}
+    }
   };
   log('— Combat ' + (J.combatIndex + 1) + '/' + CONFIG.donjon.length + ' : ' + def.nom + ' —');
   for (let i = 0; i < CONFIG.piocheDebutCombat; i++) piocherCarte();
@@ -154,16 +162,35 @@ function tick(dt) {
   return true;
 }
 
+function compter(table, nom) { table[nom] = (table[nom] || 0) + 1; }
+
+function enregistrerResume(victoire) {
+  const c = J.combat, s = c.stats;
+  HISTORIQUE.push({
+    numero: HISTORIQUE.length + 1,
+    ennemi: c.ennemi.nom, victoire: victoire, tours: c.tour,
+    orGagne: s.orGagne, orDepense: s.orDepense, orEpargne: J.or, interets: s.interets, ventes: s.ventes,
+    pv: Math.max(0, c.joueur.pv), pvPct: Math.round(100 * Math.max(0, c.joueur.pv) / c.joueur.pvMax),
+    ennemisPoses: s.unitesEnnemies.length,
+    ennemisAyantAttaque: s.unitesEnnemies.filter(u => u.aAttaque).length,
+    toursNettoyes: s.toursNettoyes,
+    degats: Object.assign({}, s.degats),
+    achetees: s.achetees, jouees: s.jouees
+  });
+}
+
 function verifierFin() {
   const c = J.combat;
   if (c.fini) return true;
   if (c.ennemi.pv <= 0) {
     c.fini = true;
+    enregistrerResume(true);
     J.combatIndex++;
     J.ecran = J.combatIndex >= CONFIG.donjon.length ? 'runGagnee' : 'entreCombats';
     log('Victoire contre ' + c.ennemi.nom + ' !');
   } else if (c.joueur.pv <= 0) {
     c.fini = true;
+    enregistrerResume(false);
     J.ecran = 'runPerdue';
     log('Défaite.');
   }
@@ -181,6 +208,8 @@ function debutTour() {
   c.tour++;
   const interets = Math.min(Math.floor(J.or / CONFIG.interets.tranche), CONFIG.interets.plafond);
   J.or += CONFIG.orParTour + interets;
+  c.stats.orGagne += CONFIG.orParTour + interets;
+  c.stats.interets += interets;
   log('Tour ' + c.tour + ' : +' + CONFIG.orParTour + ' or, +' + interets + ' d\'intérêts.');
   c.boutique = tirerBoutique();
   c.pioches = 0;
@@ -225,6 +254,8 @@ function acheter(i) {
   if (!peutAcheter(i)) return;
   const id = c.boutique[i];
   J.or -= prixAchat(id);
+  c.stats.orDepense += prixAchat(id);
+  compter(c.stats.achetees, CARTE[id].nom);
   const k = instance(id);
   J.collection.push(k);
   c.main.push(k);
@@ -238,6 +269,7 @@ function peutRelancer() { return J.combat.phase === 'boutique' && J.or >= CONFIG
 function relancer() {
   if (!peutRelancer()) return;
   J.or -= CONFIG.prixRelance;
+  J.combat.stats.orDepense += CONFIG.prixRelance;
   J.combat.boutique = tirerBoutique();
   log('Relance de la boutique (-' + CONFIG.prixRelance + ' or).');
 }
@@ -263,6 +295,7 @@ function peutMonterNiveau() {
 function monterNiveau() {
   if (!peutMonterNiveau()) return;
   J.or -= prixNiveauSuivant();
+  J.combat.stats.orDepense += prixNiveauSuivant();
   J.niveau++;
   log('Niveau ' + J.niveau + ' atteint.');
 }
@@ -275,6 +308,8 @@ function vendre(uid) {
   c.main = c.main.filter(x => x !== k);
   J.collection = J.collection.filter(x => x !== k);
   J.or += prixVente(k);
+  c.stats.orGagne += prixVente(k);
+  c.stats.ventes += prixVente(k);
   J.selection = null;
   log('Vente : ' + nomCarte(k) + ' (+' + prixVente(k) + ' or).');
 }
@@ -306,6 +341,7 @@ function finBoutique() {
   if (c.phase !== 'boutique') return;
   changerPhase('jeu');
   c.sorts = 0;
+  c.monstresEnnemisDebutJeu = c.ennemi.monstres.length;
   c.joueur.monstres.forEach(m => { m.peutAttaquer = true; });
 }
 
@@ -326,6 +362,7 @@ function poser(uid) {
   if (!k || !peutPoser(k)) return;
   retirerDeMain(k);
   J.selection = null;
+  compter(c.stats.jouees, CARTE[k.id].nom);
   if (CARTE[k.id].type === 'monstre') {
     c.joueur.monstres.push(unite(k));
     log('Tu poses ' + nomCarte(k) + '.');
@@ -387,6 +424,7 @@ function lancerSort(uid, ref) {
   c.defausse.push(k);
   c.sorts++;
   J.selection = null;
+  compter(c.stats.jouees, CARTE[k.id].nom);
   if (declencherPiege(c.ennemi, 'sort', null)) {
     log(nomCarte(k) + ' est annulé.');
     return;
@@ -436,8 +474,10 @@ function resoudreAttaque(attaquantCamp, a, defenseur, ref) {
     verifierFin();
     return;
   }
+  a.aAttaque = true;
   if (!cible.unite) {
     defenseur.pv -= a.atq;
+    if (defenseur.estJoueur) J.combat.stats.degats.monstres += a.atq;
     log(qui + ' attaque ' + nomCible(cible) + ' : ' + a.atq + ' dégâts.');
   } else {
     cible.unite.pv -= a.atq;
@@ -458,6 +498,8 @@ function attaquer(uid, ref) {
 function finTour() {
   const c = J.combat;
   if (c.phase !== 'jeu') return;
+  // Plateau ennemi entièrement nettoyé pendant ce tour (il avait au moins un monstre au début).
+  if (c.monstresEnnemisDebutJeu > 0 && c.ennemi.monstres.length === 0) c.stats.toursNettoyes++;
   tourEnnemi();
   if (!c.fini) debutTour();
 }
@@ -527,7 +569,9 @@ function sortEnnemi(id) {
     return;
   }
   const cible = trouverCible(ref);
+  const pvAvant = c.joueur.pv;
   appliquerEffet(d.effet, mult(k.niveau), cible);
+  if (c.joueur.pv < pvAvant) c.stats.degats.sorts += pvAvant - c.joueur.pv;
   log(e.nom + ' lance ' + d.nom + ' sur ' + nomCible(cible) + '.');
   nettoyerMorts();
   verifierFin();
@@ -536,7 +580,9 @@ function sortEnnemi(id) {
 function poseEnnemi(id) {
   const e = J.combat.ennemi, d = CARTE[id];
   if (d.type === 'monstre' && e.monstres.length < e.def.emplacementsMonstres) {
-    e.monstres.push(unite(instance(id)));
+    const u = unite(instance(id));
+    e.monstres.push(u);
+    J.combat.stats.unitesEnnemies.push(u);
     log(e.nom + ' pose ' + d.nom + '.');
   } else if (d.type === 'piege' && e.pieges.length < e.def.emplacementsPieges) {
     e.pieges.push(instance(id));

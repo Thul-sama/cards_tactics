@@ -42,6 +42,13 @@ var CONFIG = {
     { monstres: 3, sortsParTour: 2, pieges: 2, prix: 6 }  // [à valider]
   ],
 
+  // --- Leviers de pression ennemie et outils de diagnostic ---
+  // Chaque levier a un interrupteur `enabled`. Voir docs/regles.md, section 16.
+  leviers: {
+    // Résumé de fin de combat et historique de la session
+    statistiques: { enabled: true }
+  },
+
   // --- Donjon : suite des ennemis (clés de data/enemies.js) ---
   donjon: ['pillards', 'pillards']               // [à valider]
 };
