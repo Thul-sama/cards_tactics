@@ -161,3 +161,33 @@ Exemple, « Bande de pillards » (héros à 12 PV) :
 - Le nombre de combats par donjon.
 - Le comportement de l'IA au-delà des scripts simples.
 - Le PvP, prévu pour plus tard.
+
+## 14. Choix provisoires du prototype **[à valider]**
+
+Ces choix comblent les trous des sections précédentes pour que le prototype soit jouable. Ce sont les options les plus simples. Ils sont paramétrables dans `data/config.js` ou `data/enemies.js` quand c'est possible.
+
+| Point | Choix du prototype | Paramètre |
+|---|---|---|
+| Or de départ | 0 | `orDepart` |
+| Deck de départ | Gobelin éclaireur, Squelette, Loup des bois, Projectile magique | `deckDepart` |
+| Moment des intérêts | Calculés sur l'or possédé au début du tour, avant le revenu | — |
+| Pool de la boutique | Infini, tirage pondéré par rareté (60 / 30 / 10 / 0) | `chancesRarete` |
+| Cartes achetées | Elles vont directement en main | — |
+| Fusion | Seules les cartes **en main** comptent. Pas de niveau 3. Le niveau 2 double les stats et les valeurs d'effet. | `fusion` |
+| Vente d'une carte de niveau 2 | Prix de vente × 3, soit la valeur des 3 exemplaires | `venteSelonNiveau` |
+| « 1 sort » au niveau 1 | 1 sort direct par tour | `niveaux[].sortsParTour` |
+| Sorts et pièges | Les sorts directs se lancent. Seules les cartes Piège se posent face cachée. La règle « un sort peut être posé comme piège » n'est pas appliquée, faute de déclencheur défini pour les sorts directs. | — |
+| Montée de niveau | Achat en boutique : niv. 2 pour 4 or (2 monstres), niv. 3 pour 6 or (3 monstres, 2 sorts, 2 pièges) | `niveaux` |
+| Cibles des sorts | Dégâts et soin : n'importe quel monstre ou héros. Bénédiction : n'importe quel monstre. | — |
+| Résolution d'une attaque | Échange simultané. La Fosse à pieux frappe l'attaquant avant l'échange ; s'il meurt, l'attaque est annulée. | — |
+| Pièges | À usage unique, ils partent en défausse une fois déclenchés | — |
+| Chrono écoulé | La phase se termine : la boutique passe au jeu, et le jeu passe la main à l'ennemi. Les actions non faites sont perdues. | `chrono` (0 = désactivé) |
+| Pause | Un bouton de pause, plus une pause automatique quand l'application passe en arrière-plan | — |
+| Emplacements de l'ennemi | 3 monstres, 1 piège | `emplacementsMonstres`, `emplacementsPieges` |
+| Ciblage de l'ennemi | Un monstre avec Provocation s'il y en a un, sinon le héros du joueur | — |
+| Pièges ennemis | Le nombre est visible, le contenu reste caché. L'intention annonce « un piège » sans le nommer. | — |
+| PV du héros | Remis à 20 au début de chaque combat | `pvHeros` |
+| Défaite | Fin de la run | — |
+| Donjon | 2 combats contre la Bande de pillards | `donjon` |
+| Sauvegarde | Non incluse dans le prototype (hors périmètre) | — |
+| Contre-sort | Implémenté, mais inutile pour l'instant : l'ennemi scripté ne lance aucun sort | — |
