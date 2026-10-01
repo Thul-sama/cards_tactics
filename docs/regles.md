@@ -184,10 +184,30 @@ Ces choix comblent les trous des sections précédentes pour que le prototype so
 | Chrono écoulé | La phase se termine : la boutique passe au jeu, et le jeu passe la main à l'ennemi. Les actions non faites sont perdues. | `chrono` (0 = désactivé) |
 | Pause | Un bouton de pause, plus une pause automatique quand l'application passe en arrière-plan | — |
 | Emplacements de l'ennemi | 3 monstres, 1 piège | `emplacementsMonstres`, `emplacementsPieges` |
-| Ciblage de l'ennemi | Un monstre avec Provocation s'il y en a un, sinon le héros du joueur | — |
+| Ciblage de l'ennemi | Voir section 15 | `ia` dans `enemies.js` |
 | Pièges ennemis | Le nombre est visible, le contenu reste caché. L'intention annonce « un piège » sans le nommer. | — |
 | PV du héros | Remis à 20 au début de chaque combat | `pvHeros` |
 | Défaite | Fin de la run | — |
 | Donjon | 2 combats contre la Bande de pillards | `donjon` |
 | Sauvegarde | Non incluse dans le prototype (hors périmètre) | — |
-| Contre-sort | Implémenté, mais inutile pour l'instant : l'ennemi scripté ne lance aucun sort | — |
+| Contre-sort | Implémenté, mais inutile pour l'instant : l'ennemi scripté ne lance aucun sort (l'action `sort` existe dans les scripts mais n'est pas utilisée) | — |
+
+## 15. IA de ciblage de l'ennemi
+
+L'IA choisit seulement les **cibles**. Ce que l'ennemi pose ou lance reste défini par son script.
+
+**Attaques.** Chaque monstre prêt attaque à son tour, en testant ces priorités dans l'ordre :
+
+1. **Létal** : il attaque le héros si les dégâts cumulés des monstres qui n'ont pas encore attaqué ce tour suffisent à le tuer.
+2. **Tuer sans perte** : il tue un monstre du joueur sans perdre l'attaquant, c'est-à-dire si l'ATQ de la cible est inférieure à ses propres PV. S'il a le choix, il vise le plus dangereux.
+3. **Le plus dangereux** : il attaque le monstre du joueur qui a l'ATQ la plus haute, même si l'échange lui est défavorable.
+4. Si rien ne correspond, il attaque le héros.
+
+La Provocation est toujours respectée, même quand une attaque sur le héros serait létale. L'IA ignore les pièges cachés du joueur. **[à valider]**
+
+**Sorts** (aucun script n'en lance pour l'instant) :
+
+- Sort de dégâts : le héros si c'est létal, sinon le monstre du joueur à l'ATQ la plus haute, sinon le héros. Les sorts ignorent la Provocation.
+- Soin : son propre héros. Bénédiction : son monstre à l'ATQ la plus haute. **[à valider]**
+
+Les priorités sont paramétrables pour chaque ennemi dans `data/enemies.js` (`ia.attaques` et `ia.sorts`, valeurs possibles : `letal`, `tuerSansPerte`, `plusDangereux`, `heros`). Par exemple, `['letal', 'heros']` donne un profil agressif qui frappe toujours le héros.

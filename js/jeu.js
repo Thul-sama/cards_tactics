@@ -67,6 +67,7 @@ function texteIntention(tour) {
   return actionsEnnemi(tour).map(a => {
     if (a.action === 'attaque') return 'Attaque';
     const d = CARTE[a.carte];
+    if (a.action === 'sort') return 'Lance ' + d.nom;
     if (d.type === 'monstre') return 'Pose ' + d.nom + ' (' + d.atq + '/' + d.pv + ')';
     return 'Pose un piège face cachée';
   }).join(', puis ');
@@ -471,16 +472,66 @@ function tourEnnemi() {
   for (const act of actionsEnnemi(c.tour)) {
     if (c.fini) return;
     if (act.action === 'pose') poseEnnemi(act.carte);
-    if (act.action === 'attaque') {
-      for (const m of e.monstres.slice()) {
-        if (c.fini) return;
-        if (!e.monstres.includes(m) || !m.peutAttaquer) continue;
-        // Ciblage : un monstre avec Provocation s'il y en a un, sinon le héros. [à valider]
-        const provoc = c.joueur.monstres.find(u => u.provocation);
-        resoudreAttaque(e, m, c.joueur, provoc ? 'm' + provoc.uid : 'hj');
-      }
-    }
+    if (act.action === 'sort') sortEnnemi(act.carte);
+    if (act.action === 'attaque') attaquesEnnemi();
   }
+}
+
+// Les monstres prêts attaquent un par un ; chaque cible est choisie par l'IA (ia.attaques).
+function attaquesEnnemi() {
+  const c = J.combat, e = c.ennemi;
+  for (const m of e.monstres.slice()) {
+    if (c.fini) return;
+    if (!e.monstres.includes(m) || !m.peutAttaquer) continue;
+    // Dégâts que les attaquants restants (celui-ci compris) peuvent encore infliger ce tour.
+    const restants = e.monstres.filter(u => u.peutAttaquer).reduce((s, u) => s + u.atq, 0);
+    const ref = choisirCibleIA(e.def.ia.attaques, ciblesAttaque(c.joueur), m.atq, m.pv, restants);
+    resoudreAttaque(e, m, c.joueur, ref);
+  }
+}
+
+// Renvoie la première cible trouvée en testant les priorités dans l'ordre.
+// options : cibles autorisées (Provocation déjà prise en compte pour les attaques).
+// pvAttaquant : null pour un sort (il ne subit pas de riposte).
+function choisirCibleIA(priorites, options, degats, pvAttaquant, degatsTotaux) {
+  const j = J.combat.joueur;
+  const monstres = j.monstres.filter(u => options.includes('m' + u.uid));
+  const plusDangereux = liste => liste.reduce((best, u) => (!best || u.atq > best.atq ? u : best), null);
+  for (const p of priorites) {
+    if (p === 'letal' && options.includes('hj') && degatsTotaux >= j.pv) return 'hj';
+    if (p === 'tuerSansPerte') {
+      const u = plusDangereux(monstres.filter(u => u.pv <= degats && (pvAttaquant === null || u.atq < pvAttaquant)));
+      if (u) return 'm' + u.uid;
+    }
+    if (p === 'plusDangereux' && monstres.length) return 'm' + plusDangereux(monstres).uid;
+    if (p === 'heros' && options.includes('hj')) return 'hj';
+  }
+  return options.includes('hj') ? 'hj' : options[0];
+}
+
+// Sort ennemi. Dégâts : ciblés par l'IA (ia.sorts) parmi les cibles du joueur.
+// Soin : son propre héros. Bénédiction : son monstre à l'ATQ la plus haute. [à valider]
+function sortEnnemi(id) {
+  const c = J.combat, e = c.ennemi, d = CARTE[id], k = instance(id);
+  let ref = null;
+  if (d.effet.type === 'degats') {
+    const options = ['hj'].concat(c.joueur.monstres.map(u => 'm' + u.uid));
+    ref = choisirCibleIA(e.def.ia.sorts, options, d.effet.valeur, null, d.effet.valeur);
+  } else if (d.effet.type === 'soin') {
+    ref = 'he';
+  } else if (d.effet.type === 'buff' && e.monstres.length) {
+    ref = 'm' + e.monstres.reduce((best, u) => (u.atq > best.atq ? u : best)).uid;
+  }
+  if (!ref) return;
+  if (declencherPiege(c.joueur, 'sort', null)) {
+    log(e.nom + ' lance ' + d.nom + ', mais le sort est annulé.');
+    return;
+  }
+  const cible = trouverCible(ref);
+  appliquerEffet(d.effet, mult(k.niveau), cible);
+  log(e.nom + ' lance ' + d.nom + ' sur ' + nomCible(cible) + '.');
+  nettoyerMorts();
+  verifierFin();
 }
 
 function poseEnnemi(id) {
