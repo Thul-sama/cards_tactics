@@ -77,7 +77,9 @@ function htmlUnite(m, camp) {
   if (m.provocation) etats.push('Provocation');
   if (m.charge) etats.push('Charge');
   if (camp.estJoueur && c.phase === 'jeu') etats.push(m.peutAttaquer ? 'Prêt' : 'Ne peut pas attaquer');
-  const contenu = '<b>' + nomCarte(m) + '</b><span class="stats">' + m.atq + ' / ' + m.pv + '</span>' +
+  const enrage = atqEff(m) - m.atq;
+  if (enrage) etats.push('enrage +' + enrage);
+  const contenu = '<b>' + nomCarte(m) + '</b><span class="stats">' + atqEff(m) + ' / ' + m.pv + '</span>' +
     '<small>' + etats.join(' · ') + '</small>';
   return bloc('carte monstre' + (sel ? ' sel' : '') + (cible ? ' cible' : '') + (m.peutAttaquer && camp.estJoueur ? ' pret' : ''), action, contenu);
 }
@@ -88,6 +90,14 @@ function emplacementsVides(n, piege) {
   return h;
 }
 
+function texteEnrage() {
+  const L = CONFIG.leviers.enrage;
+  if (!L.enabled) return '';
+  const prochain = bonusEnrage(J.combat.ennemi.tours + 1);
+  return '<p class="intention enrage">Enrage : <b>+' + bonusEnrage() + ' ATQ</b> pour les monstres ennemis' +
+    ' (+' + prochain + ' au prochain tour ennemi' + (prochain ? '' : ', commence au tour ennemi ' + L.startTurn) + ')</p>';
+}
+
 function zoneEnnemi() {
   const c = J.combat, e = c.ennemi;
   let pieges = '';
@@ -96,7 +106,8 @@ function zoneEnnemi() {
   }
   return '<section class="zone ennemi">' +
     htmlHeros(e, 'he') +
-    '<p class="intention">Intention ce tour : <b>' + texteIntention(c.tour || 1) + '</b></p>' +
+    '<p class="intention">Intention ce tour : <b>' + texteIntention(e.tours + 1) + '</b></p>' +
+    texteEnrage() +
     '<div class="rang">' + pieges + '</div>' +
     '<div class="rang">' + e.monstres.map(m => htmlUnite(m, e)).join('') +
     emplacementsVides(e.def.emplacementsMonstres - e.monstres.length) + '</div>' +

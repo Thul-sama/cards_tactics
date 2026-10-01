@@ -64,6 +64,15 @@ function actionsEnnemi(tour) {
   return tour <= d.script.length ? d.script[tour - 1] : d.ensuite;
 }
 
+// Bonus d'ATQ des monstres ennemis (levier 2.3), pour le n-ième tour ennemi (par défaut : le dernier joué).
+function bonusEnrage(tourEnnemi) {
+  const L = CONFIG.leviers.enrage, t = tourEnnemi === undefined ? J.combat.ennemi.tours : tourEnnemi;
+  return L.enabled && t >= L.startTurn ? (t - L.startTurn + 1) * L.perTurn : 0;
+}
+
+// ATQ réelle d'un monstre, enrage compris.
+function atqEff(u) { return u.atq + (u.ennemi ? bonusEnrage() : 0); }
+
 // Niveau d'une carte posée ou lancée par l'ennemi (levier 2.2).
 function niveauEnnemi(act) {
   return CONFIG.leviers.niveauxEnnemis.enabled ? (act.niveau || 1) : 1;
@@ -109,7 +118,7 @@ function demarrerCombat() {
     tour: 0, phase: 'mulligan', fini: false, chrono: 0,
     deck: melanger(J.collection.slice()), main: [], defausse: [],
     joueur: { estJoueur: true, nom: 'Toi', pv: CONFIG.pvHeros, pvMax: CONFIG.pvHeros, monstres: [], pieges: [] },
-    ennemi: { estJoueur: false, nom: def.nom, def: def, pv: def.pv, pvMax: def.pv, monstres: [], pieges: [] },
+    ennemi: { estJoueur: false, nom: def.nom, def: def, pv: def.pv, pvMax: def.pv, monstres: [], pieges: [], tours: 0 },
     boutique: [], pioches: 0, sorts: 0, mulligans: CONFIG.mulligan,
     monstresEnnemisDebutJeu: 0,
     stats: {
@@ -488,13 +497,17 @@ function resoudreAttaque(attaquantCamp, a, defenseur, ref) {
     return;
   }
   a.aAttaque = true;
+  const atqA = atqEff(a);
   if (!cible.unite) {
-    defenseur.pv -= a.atq;
-    if (defenseur.estJoueur) J.combat.stats.degats.monstres += a.atq;
-    log(qui + ' attaque ' + nomCible(cible) + ' : ' + a.atq + ' dégâts.');
+    defenseur.pv -= atqA;
+    if (defenseur.estJoueur) {
+      J.combat.stats.degats.monstres += a.atq;
+      J.combat.stats.degats.enrage += atqA - a.atq;
+    }
+    log(qui + ' attaque ' + nomCible(cible) + ' : ' + atqA + ' dégâts.');
   } else {
-    cible.unite.pv -= a.atq;
-    a.pv -= cible.unite.atq;
+    cible.unite.pv -= atqA;
+    a.pv -= atqEff(cible.unite);
     log(qui + ' attaque ' + nomCible(cible) + '.');
   }
   nettoyerMorts();
@@ -523,7 +536,8 @@ function tourEnnemi() {
   const c = J.combat, e = c.ennemi;
   changerPhase('ennemi');
   e.monstres.forEach(m => { m.peutAttaquer = true; });
-  for (const act of actionsEnnemi(c.tour)) {
+  e.tours++;
+  for (const act of actionsEnnemi(e.tours)) {
     if (c.fini) return;
     if (act.action === 'pose') for (let i = nbPoses(act); i > 0; i--) poseEnnemi(act);
     if (act.action === 'sort') sortEnnemi(act);
@@ -538,8 +552,8 @@ function attaquesEnnemi() {
     if (c.fini) return;
     if (!e.monstres.includes(m) || !m.peutAttaquer) continue;
     // Dégâts que les attaquants restants (celui-ci compris) peuvent encore infliger ce tour.
-    const restants = e.monstres.filter(u => u.peutAttaquer).reduce((s, u) => s + u.atq, 0);
-    const ref = choisirCibleIA(e.def.ia.attaques, ciblesAttaque(c.joueur), m.atq, m.pv, restants);
+    const restants = e.monstres.filter(u => u.peutAttaquer).reduce((s, u) => s + atqEff(u), 0);
+    const ref = choisirCibleIA(e.def.ia.attaques, ciblesAttaque(c.joueur), atqEff(m), m.pv, restants);
     resoudreAttaque(e, m, c.joueur, ref);
   }
 }
@@ -595,6 +609,7 @@ function poseEnnemi(act) {
   const id = act.carte, e = J.combat.ennemi, d = CARTE[id];
   if (d.type === 'monstre' && e.monstres.length < e.def.emplacementsMonstres) {
     const u = unite(instance(id, niveauEnnemi(act)));
+    u.ennemi = true;
     e.monstres.push(u);
     J.combat.stats.unitesEnnemies.push(u);
     log(e.nom + ' pose ' + nomCarte(u) + '.');

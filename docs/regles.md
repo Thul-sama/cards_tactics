@@ -243,3 +243,9 @@ Le nombre d'emplacements de monstres de l'ennemi (`emplacementsMonstres`) se rè
 Dans un script ennemi, une pose ou un sort peut indiquer un `niveau` de 2 ou 3. Les statistiques et les effets sont alors multipliés comme pour une fusion (`fusion.multiplicateur`, ×2 par niveau). Quand le levier est désactivé, toutes les cartes ennemies sont de niveau 1. Le niveau 3 est permis pour l'ennemi, même si le joueur ne peut pas encore fusionner jusqu'au niveau 3.
 
 La **Provocation** fonctionne dans les deux camps : tant qu'un monstre adverse a Provocation, les attaques de monstres doivent le viser, et le héros ne peut pas être attaqué. Les sorts l'ignorent, comme dans Hearthstone. **[à valider]**
+
+### 16.4 Enrage (`leviers.enrage`, désactivé)
+
+À partir du tour ennemi `startTurn`, l'ATQ de tous les monstres ennemis augmente de `perTurn` à chaque tour ennemi : +1 au tour `startTurn`, +2 au suivant, et ainsi de suite. Le bonus compte aussi pour la riposte quand le joueur attaque un monstre ennemi. Le bonus en cours et celui du prochain tour sont affichés dans la zone ennemie. Les tours sont comptés **côté ennemi** : c'est son propre compteur qui fait avancer son script et son enrage. **[à valider]**
+
+Dans les statistiques, la part des dégâts au héros due au bonus est comptée en « enrage », le reste en « monstres ».
