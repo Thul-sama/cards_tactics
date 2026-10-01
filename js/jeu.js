@@ -64,6 +64,11 @@ function actionsEnnemi(tour) {
   return tour <= d.script.length ? d.script[tour - 1] : d.ensuite;
 }
 
+// Niveau d'une carte posée ou lancée par l'ennemi (levier 2.2).
+function niveauEnnemi(act) {
+  return CONFIG.leviers.niveauxEnnemis.enabled ? (act.niveau || 1) : 1;
+}
+
 // Nombre d'exemplaires posés par une action 'pose' (levier 2.1).
 function nbPoses(act) {
   if (CARTE[act.carte].type !== 'monstre' || !CONFIG.leviers.posesMultiples.enabled) return 1;
@@ -74,9 +79,10 @@ function texteIntention(tour) {
   return actionsEnnemi(tour).map(a => {
     if (a.action === 'attaque') return 'Attaque';
     const d = CARTE[a.carte];
-    if (a.action === 'sort') return 'Lance ' + d.nom;
+    const k = { id: a.carte, niveau: niveauEnnemi(a) };
+    if (a.action === 'sort') return 'Lance ' + nomCarte(k);
     const n = nbPoses(a);
-    if (d.type === 'monstre') return 'Pose ' + (n > 1 ? n + '× ' : '') + d.nom + ' (' + d.atq + '/' + d.pv + ')';
+    if (d.type === 'monstre') return 'Pose ' + (n > 1 ? n + '× ' : '') + nomCarte(k) + ' (' + texteCarte(k.id, k.niveau) + ')';
     return 'Pose un piège face cachée';
   }).join(', puis ');
 }
@@ -520,7 +526,7 @@ function tourEnnemi() {
   for (const act of actionsEnnemi(c.tour)) {
     if (c.fini) return;
     if (act.action === 'pose') for (let i = nbPoses(act); i > 0; i--) poseEnnemi(act);
-    if (act.action === 'sort') sortEnnemi(act.carte);
+    if (act.action === 'sort') sortEnnemi(act);
     if (act.action === 'attaque') attaquesEnnemi();
   }
 }
@@ -559,12 +565,13 @@ function choisirCibleIA(priorites, options, degats, pvAttaquant, degatsTotaux) {
 
 // Sort ennemi. Dégâts : ciblés par l'IA (ia.sorts) parmi les cibles du joueur.
 // Soin : son propre héros. Bénédiction : son monstre à l'ATQ la plus haute. [à valider]
-function sortEnnemi(id) {
-  const c = J.combat, e = c.ennemi, d = CARTE[id], k = instance(id);
+function sortEnnemi(act) {
+  const c = J.combat, e = c.ennemi, d = CARTE[act.carte], k = instance(act.carte, niveauEnnemi(act));
   let ref = null;
   if (d.effet.type === 'degats') {
     const options = ['hj'].concat(c.joueur.monstres.map(u => 'm' + u.uid));
-    ref = choisirCibleIA(e.def.ia.sorts, options, d.effet.valeur, null, d.effet.valeur);
+    const degats = d.effet.valeur * mult(k.niveau);
+    ref = choisirCibleIA(e.def.ia.sorts, options, degats, null, degats);
   } else if (d.effet.type === 'soin') {
     ref = 'he';
   } else if (d.effet.type === 'buff' && e.monstres.length) {
@@ -572,14 +579,14 @@ function sortEnnemi(id) {
   }
   if (!ref) return;
   if (declencherPiege(c.joueur, 'sort', null)) {
-    log(e.nom + ' lance ' + d.nom + ', mais le sort est annulé.');
+    log(e.nom + ' lance ' + nomCarte(k) + ', mais le sort est annulé.');
     return;
   }
   const cible = trouverCible(ref);
   const pvAvant = c.joueur.pv;
   appliquerEffet(d.effet, mult(k.niveau), cible);
   if (c.joueur.pv < pvAvant) c.stats.degats.sorts += pvAvant - c.joueur.pv;
-  log(e.nom + ' lance ' + d.nom + ' sur ' + nomCible(cible) + '.');
+  log(e.nom + ' lance ' + nomCarte(k) + ' sur ' + nomCible(cible) + '.');
   nettoyerMorts();
   verifierFin();
 }
@@ -587,12 +594,12 @@ function sortEnnemi(id) {
 function poseEnnemi(act) {
   const id = act.carte, e = J.combat.ennemi, d = CARTE[id];
   if (d.type === 'monstre' && e.monstres.length < e.def.emplacementsMonstres) {
-    const u = unite(instance(id));
+    const u = unite(instance(id, niveauEnnemi(act)));
     e.monstres.push(u);
     J.combat.stats.unitesEnnemies.push(u);
-    log(e.nom + ' pose ' + d.nom + '.');
+    log(e.nom + ' pose ' + nomCarte(u) + '.');
   } else if (d.type === 'piege' && e.pieges.length < e.def.emplacementsPieges) {
-    e.pieges.push(instance(id));
+    e.pieges.push(instance(id, niveauEnnemi(act)));
     log(e.nom + ' pose un piège face cachée.');
   }
 }

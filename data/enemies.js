@@ -2,6 +2,7 @@
 // script : liste des actions pour chaque tour (tour 1, tour 2...).
 // ensuite : actions répétées une fois le script terminé.
 // Actions : { action: 'pose', carte: '<id>' }  — ignorée s'il n'y a plus d'emplacement libre
+//           option niveau: 2 ou 3 (levier 2.2) sur une pose ou un sort
 //           { action: 'sort', carte: '<id>' }  — lance un sort direct (aucun script ne l'utilise encore)
 //           { action: 'attaque' }              — tous les monstres prêts attaquent
 

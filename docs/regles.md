@@ -237,3 +237,9 @@ Le bouton **Historique** liste les combats de la session, pour comparer plusieur
 Quand le levier est actif, chaque action « pose un monstre » du script pose `posesParTour` exemplaires de ce monstre, dans la limite des emplacements libres. L'intention l'annonce, par exemple « Pose 2× Gobelin éclaireur ». **[à valider]** : les scripts ne posant qu'un monstre à la fois, « nombre de poses par tour » est interprété comme un nombre d'exemplaires.
 
 Le nombre d'emplacements de monstres de l'ennemi (`emplacementsMonstres`) se règle par ennemi. Il ne dépend pas du niveau du joueur, et il est toujours actif (ce n'est pas un levier).
+
+### 16.3 Monstres résistants (`leviers.niveauxEnnemis`, désactivé)
+
+Dans un script ennemi, une pose ou un sort peut indiquer un `niveau` de 2 ou 3. Les statistiques et les effets sont alors multipliés comme pour une fusion (`fusion.multiplicateur`, ×2 par niveau). Quand le levier est désactivé, toutes les cartes ennemies sont de niveau 1. Le niveau 3 est permis pour l'ennemi, même si le joueur ne peut pas encore fusionner jusqu'au niveau 3.
+
+La **Provocation** fonctionne dans les deux camps : tant qu'un monstre adverse a Provocation, les attaques de monstres doivent le viser, et le héros ne peut pas être attaqué. Les sorts l'ignorent, comme dans Hearthstone. **[à valider]**
