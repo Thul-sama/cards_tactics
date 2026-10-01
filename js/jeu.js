@@ -84,6 +84,9 @@ function niveauEnnemi(act) {
   return CONFIG.leviers.niveauxEnnemis.enabled ? (act.niveau || 1) : 1;
 }
 
+// Charge donnée par le script (levier 2.5).
+function chargeEnnemie(act) { return CONFIG.leviers.chargeEnnemie.enabled && !!act.charge; }
+
 // Nombre d'exemplaires posés par une action 'pose' (levier 2.1).
 function nbPoses(act) {
   if (CARTE[act.carte].type !== 'monstre' || !CONFIG.leviers.posesMultiples.enabled) return 1;
@@ -98,7 +101,7 @@ function texteIntention(tour) {
     const k = { id: a.carte, niveau: niveauEnnemi(a) };
     if (a.action === 'sort') return 'Lance ' + nomCarte(k);
     const n = nbPoses(a);
-    if (d.type === 'monstre') return 'Pose ' + (n > 1 ? n + '× ' : '') + nomCarte(k) + ' (' + texteCarte(k.id, k.niveau) + ')';
+    if (d.type === 'monstre') return 'Pose ' + (n > 1 ? n + '× ' : '') + nomCarte(k) + ' (' + texteCarte(k.id, k.niveau) + (chargeEnnemie(a) ? ' · Charge' : '') + ')';
     return 'Pose un piège face cachée';
   }).concat(direct > 0 ? ['Frappe directe : ' + direct + ' dégâts'] : []).join(', puis ');
 }
@@ -627,6 +630,7 @@ function poseEnnemi(act) {
   if (d.type === 'monstre' && e.monstres.length < e.def.emplacementsMonstres) {
     const u = unite(instance(id, niveauEnnemi(act)));
     u.ennemi = true;
+    if (chargeEnnemie(act)) { u.charge = true; u.peutAttaquer = true; }
     e.monstres.push(u);
     J.combat.stats.unitesEnnemies.push(u);
     log(e.nom + ' pose ' + nomCarte(u) + '.');

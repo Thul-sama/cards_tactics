@@ -3,6 +3,7 @@
 // ensuite : actions répétées une fois le script terminé.
 // Actions : { action: 'pose', carte: '<id>' }  — ignorée s'il n'y a plus d'emplacement libre
 //           option niveau: 2 ou 3 (levier 2.2) sur une pose ou un sort
+//           option charge: true (levier 2.5) sur une pose de monstre
 //           { action: 'sort', carte: '<id>' }  — lance un sort direct (aucun script ne l'utilise encore)
 //           { action: 'attaque' }              — tous les monstres prêts attaquent
 
@@ -30,7 +31,7 @@ var ENNEMIS = {
       [{ action: 'pose', carte: 'gobelin' }],
       [{ action: 'pose', carte: 'gobelin' }, { action: 'attaque' }],
       [{ action: 'pose', carte: 'fosse' }, { action: 'attaque' }],
-      [{ action: 'pose', carte: 'chef_pillard' }, { action: 'attaque' }]
+      [{ action: 'pose', carte: 'chef_pillard', charge: true }, { action: 'attaque' }]
     ],
     ensuite: [{ action: 'attaque' }, { action: 'pose', carte: 'gobelin' }]
   }

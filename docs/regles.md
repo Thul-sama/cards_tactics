@@ -253,3 +253,7 @@ Dans les statistiques, la part des dégâts au héros due au bonus est comptée 
 ### 16.5 Attaque directe du héros ennemi (`leviers.attaqueDirecte`, désactivé)
 
 À la fin de chaque tour ennemi, même s'il n'a aucun monstre, le héros ennemi inflige au héros du joueur `damage` dégâts, plus `perTurn` par tour ennemi écoulé (soit `damage + perTurn × (tour ennemi − 1)`). Cette attaque ignore la Provocation et ne déclenche pas les pièges. Elle est annoncée dans l'intention. **[à valider]**
+
+### 16.6 Charge sur certains monstres ennemis (`leviers.chargeEnnemie`, désactivé)
+
+Une pose du script peut porter `charge: true`. Quand le levier est actif, le monstre gagne Charge : il peut attaquer dès le tour où il est posé, à condition que l'action « attaque » vienne après la pose dans le script. L'intention l'annonce. Exemple fourni : le Chef pillard des pillards, au tour 4.
