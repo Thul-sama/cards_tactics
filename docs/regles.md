@@ -220,7 +220,7 @@ Les priorités sont paramétrables pour chaque ennemi dans `data/enemies.js` (`i
 
 ## 16. Leviers de pression ennemie et diagnostic
 
-Ces outils servent à équilibrer. Chaque levier se règle dans `data/config.js` (`leviers`) ou dans `data/enemies.js`, et possède un interrupteur `enabled`. Au départ, tous les leviers étaient désactivés sauf les statistiques. Les réglages n°1 activent les poses multiples (16.2) et l'attaque directe (16.5).
+Ces outils servent à équilibrer. Chaque levier se règle dans `data/config.js` (`leviers`) ou dans `data/enemies.js`, et possède un interrupteur `enabled`. Au départ, tous les leviers étaient désactivés sauf les statistiques. Les réglages n°1 activent les poses multiples (16.2) et l'attaque directe (16.5) ; les niveaux des cartes ennemies (16.3) sont aussi activés.
 
 ### 16.1 Statistiques de diagnostic (`leviers.statistiques`, activé)
 
@@ -243,7 +243,7 @@ Quand le levier est actif, chaque action « pose un monstre » du script pose `p
 
 Le nombre d'emplacements de monstres de l'ennemi (`emplacementsMonstres`) se règle par ennemi. Il ne dépend pas du niveau du joueur, et il est toujours actif (ce n'est pas un levier).
 
-### 16.3 Monstres résistants (`leviers.niveauxEnnemis`, désactivé)
+### 16.3 Monstres résistants (`leviers.niveauxEnnemis`, **activé**)
 
 Dans un script ennemi, une pose ou un sort peut indiquer un `niveau` de 2 ou 3. Les statistiques et les effets sont alors multipliés comme pour une fusion (`fusion.multiplicateur`, ×2 par niveau). Quand le levier est désactivé, toutes les cartes ennemies sont de niveau 1. Le niveau 3 est permis pour l'ennemi, même si le joueur ne peut pas encore fusionner jusqu'au niveau 3.
 
