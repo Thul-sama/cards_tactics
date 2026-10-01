@@ -2,7 +2,7 @@
 // type : 'monstre' | 'sort' (sort direct) | 'piege'
 // effet.type : 'degats' | 'soin' | 'buff' | 'annuler'
 // declencheur (pièges) : 'attaque' (un monstre adverse attaque) | 'sort' (l'adversaire lance un sort)
-// horsPool : carte réservée aux ennemis, jamais proposée en boutique.
+// L'ennemi pioche ses cartes dans ce même pool.
 var CARTES = [
   // Monstres
   { id: 'gobelin',     nom: 'Gobelin éclaireur', type: 'monstre', rarete: 'commune', atq: 2, pv: 1 },
@@ -10,6 +10,7 @@ var CARTES = [
   { id: 'loup',        nom: 'Loup des bois',     type: 'monstre', rarete: 'commune', atq: 3, pv: 2 },
   { id: 'garde_nain',  nom: 'Garde nain',        type: 'monstre', rarete: 'rare',    atq: 2, pv: 5, capacites: ['provocation'] },
   { id: 'archer_elfe', nom: 'Archer elfe',       type: 'monstre', rarete: 'rare',    atq: 2, pv: 2, capacites: ['charge'] },
+  { id: 'chef_pillard', nom: 'Chef pillard',     type: 'monstre', rarete: 'rare',    atq: 4, pv: 4 },
   { id: 'ogre',        nom: 'Ogre',              type: 'monstre', rarete: 'epique',  atq: 6, pv: 6 },
 
   // Sorts directs
@@ -20,8 +21,5 @@ var CARTES = [
 
   // Pièges
   { id: 'fosse',       nom: 'Fosse à pieux', type: 'piege', rarete: 'commune', declencheur: 'attaque', effet: { type: 'degats', valeur: 3 } },
-  { id: 'contre_sort', nom: 'Contre-sort',   type: 'piege', rarete: 'rare',    declencheur: 'sort',    effet: { type: 'annuler' } },
-
-  // Cartes des ennemis
-  { id: 'chef_pillard', nom: 'Chef pillard', type: 'monstre', rarete: 'rare', atq: 4, pv: 4, horsPool: true }
+  { id: 'contre_sort', nom: 'Contre-sort',   type: 'piege', rarete: 'rare',    declencheur: 'sort',    effet: { type: 'annuler' } }
 ];

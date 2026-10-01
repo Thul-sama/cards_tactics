@@ -188,9 +188,8 @@ function debutTour() {
 }
 
 function tirerBoutique() {
-  const pool = CARTES.filter(d => !d.horsPool);
   const res = [];
-  for (let i = 0; i < CONFIG.tailleBoutique; i++) res.push(tirerCarte(pool).id);
+  for (let i = 0; i < CONFIG.tailleBoutique; i++) res.push(tirerCarte(CARTES).id);
   return res;
 }
 

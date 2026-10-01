@@ -116,6 +116,7 @@ Jeu de cartes tactique solo, hors ligne, en PvE, avec une structure de roguelike
 | Loup des bois | Commune | 3 / 2 | — |
 | Garde nain | Rare | 2 / 5 | Provocation : doit être attaqué en premier |
 | Archer elfe | Rare | 2 / 2 | Charge : peut attaquer le tour où il est posé |
+| Chef pillard | Rare | 4 / 4 | — **[à valider]** : carte de l'ennemi ajoutée au pool |
 | Ogre | Épique | 6 / 6 | — |
 
 **Sorts directs**
@@ -136,7 +137,7 @@ Jeu de cartes tactique solo, hors ligne, en PvE, avec une structure de roguelike
 
 ## 12. Ennemi scripté du prototype **[à valider]**
 
-L'ennemi a un **deck prédéfini** et **annonce son intention** au tour précédent.
+L'ennemi a un **deck prédéfini** et **annonce son intention** au tour précédent. Ses cartes viennent du **même pool que le joueur** (section 11).
 
 Exemple, « Bande de pillards » (héros à 12 PV) :
 

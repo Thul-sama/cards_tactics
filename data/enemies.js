@@ -1,4 +1,4 @@
-// Ennemis scriptés (docs/regles.md, section 12).
+// Ennemis scriptés (docs/regles.md, section 12). Leurs cartes viennent du même pool que le joueur (cards.js).
 // script : liste des actions pour chaque tour (tour 1, tour 2...).
 // ensuite : actions répétées une fois le script terminé.
 // Actions : { action: 'pose', carte: '<id>' }  — ignorée s'il n'y a plus d'emplacement libre
