@@ -253,12 +253,99 @@ function htmlHistorique() {
     HISTORIQUE.slice().reverse().map(r => '<details><summary>Détail du combat ' + r.numero + '</summary>' + htmlResume(r) + '</details>').join('');
 }
 
+// ---------- Panneau de réglage ----------
+// Modifie CONFIG et ENNEMIS en mémoire : rien n'est écrit dans les fichiers.
+
+const LIBELLES_LEVIERS = {
+  statistiques: 'Statistiques de diagnostic',
+  posesMultiples: '2.1 Plusieurs poses par tour',
+  niveauxEnnemis: '2.2 Monstres résistants (niveaux)',
+  enrage: '2.3 Enrage',
+  attaqueDirecte: '2.4 Attaque directe',
+  chargeEnnemie: '2.5 Charge ennemie',
+  ordreDepart: '3. Ordre de départ'
+};
+
+function champ(libelle, attrs, valeur) {
+  if (typeof valeur === 'boolean') {
+    return '<label class="champ"><input type="checkbox" ' + attrs + (valeur ? ' checked' : '') + '> ' + libelle + '</label>';
+  }
+  if (typeof valeur === 'number') {
+    return '<label class="champ">' + libelle + ' <input type="number" step="any" ' + attrs + ' value="' + valeur + '"></label>';
+  }
+  if (Array.isArray(valeur)) {
+    return '<label class="champ">' + libelle + ' <input type="text" data-liste="1" ' + attrs + ' value="' + valeur.join(', ') + '"></label>';
+  }
+  return '';
+}
+
+function htmlReglages() {
+  let h = '<p class="aide">Les changements s\'appliquent tout de suite, pour cette session seulement. Les PV des ennemis comptent à partir du prochain combat.</p>';
+  for (const nom of Object.keys(CONFIG.leviers)) {
+    const L = CONFIG.leviers[nom];
+    h += '<fieldset><legend>' + (LIBELLES_LEVIERS[nom] || nom) + '</legend>' +
+      Object.keys(L).map(k => champ(k === 'enabled' ? 'activé' : k, 'data-chemin="leviers.' + nom + '.' + k + '"', L[k])).join('') +
+      '</fieldset>';
+  }
+  h += '<fieldset><legend>Outils</legend>' + champ('choix de l\'ennemi avant chaque combat', 'data-chemin="choixEnnemi"', CONFIG.choixEnnemi) + '</fieldset>';
+  for (const id of Object.keys(ENNEMIS)) {
+    const d = ENNEMIS[id], a = 'data-ennemi="' + id + '" data-chemin="';
+    const premier = ['player', 'enemy', 'random'].map(v => '<option' + (d.firstPlayer === v ? ' selected' : '') + '>' + v + '</option>').join('');
+    h += '<fieldset><legend>' + d.nom + ' (' + (d.archetype || '') + ')</legend>' +
+      ['pv', 'emplacementsMonstres', 'emplacementsPieges', 'posesParTour'].map(k => champ(k, a + k + '"', d[k] || 0)).join('') +
+      '<label class="champ">firstPlayer <select ' + a + 'firstPlayer">' + premier + '</select></label>' +
+      champ('ia.attaques', a + 'ia.attaques"', d.ia.attaques) +
+      champ('ia.sorts', a + 'ia.sorts"', d.ia.sorts) +
+      '</fieldset>';
+  }
+  return h + '<div class="actions">' +
+    bouton('Copier la config', 'data-action="copier" data-quoi="config"') +
+    bouton('Copier les ennemis', 'data-action="copier" data-quoi="ennemis"') +
+    '<span id="copie-statut" class="aide"></span></div>' +
+    '<textarea id="export" readonly rows="6" placeholder="Le texte copié apparaît ici."></textarea>' +
+    '<p class="aide">Le texte exporté remplace le contenu de data/config.js ou data/enemies.js. Les commentaires des fichiers ne sont pas conservés.</p>';
+}
+
+function exporter(quoi) {
+  if (quoi === 'config') return '// Exporté depuis le panneau de réglage.\nvar CONFIG = ' + JSON.stringify(CONFIG, null, 2) + ';\n';
+  return '// Exporté depuis le panneau de réglage.\nvar ENNEMIS = ' + JSON.stringify(ENNEMIS, null, 2) + ';\n';
+}
+
+function copier(quoi) {
+  const zone = el('export'), statut = el('copie-statut');
+  zone.value = exporter(quoi);
+  const secours = () => {
+    zone.select();
+    let ok = false;
+    try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+    statut.textContent = ok ? 'Copié.' : 'Copie impossible : sélectionne le texte ci-dessous.';
+  };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(zone.value).then(() => { statut.textContent = 'Copié.'; }, secours);
+  } else secours();
+}
+
+document.addEventListener('change', ev => {
+  const i = ev.target;
+  if (!i.dataset || !i.dataset.chemin) return;
+  let v;
+  if (i.type === 'checkbox') v = i.checked;
+  else if (i.type === 'number') { v = parseFloat(i.value); if (!isFinite(v)) return; }
+  else if (i.dataset.liste) v = i.value.split(',').map(x => x.trim()).filter(Boolean);
+  else v = i.value;
+  const cles = i.dataset.chemin.split('.'), derniere = cles.pop();
+  const obj = cles.reduce((o, k) => o[k], i.dataset.ennemi ? ENNEMIS[i.dataset.ennemi] : CONFIG);
+  obj[derniere] = v;
+  rendre();
+});
+
 // Contenu de la fenêtre. Reconstruit seulement à l'ouverture, pour ne pas perdre la saisie en cours.
 function rendreModal() {
   el('modal').hidden = !modal;
   if (!modal) return;
   let titre = '', contenu = '';
   if (modal === 'historique') { titre = 'Historique de la session'; contenu = htmlHistorique(); }
+  if (modal === 'reglages') { titre = 'Réglages (session uniquement)'; contenu = htmlReglages(); }
   el('modal-contenu').innerHTML = '<h2>' + titre + '</h2>' + contenu +
     '<div class="actions">' + bouton('Fermer', 'data-action="fermer-modal"', false, 'principal') + '</div>';
 }
@@ -295,6 +382,8 @@ const ACTIONS = {
   'nouvelle-run': nouvelleRun,
   'pause': () => { J.pause = !J.pause; },
   'historique': () => { modal = 'historique'; rendreModal(); },
+  'reglages': () => { modal = 'reglages'; rendreModal(); },
+  'copier': d => copier(d.quoi),
   'fermer-modal': () => { modal = null; rendreModal(); }
 };
 

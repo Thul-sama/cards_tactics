@@ -288,3 +288,9 @@ Pendant le tour du joueur, l'intention annonce l'action de l'ennemi **et ses cib
 Chaque ennemi a un paramètre `firstPlayer` : `"player"`, `"enemy"` ou `"random"`. Quand le levier est actif et que l'ennemi commence, il joue un tour complet (son tour 1) après le mulligan et avant la première boutique du joueur. Le joueur reçoit alors `secondPlayerGold` or (1 par défaut), une seule fois par combat, avant le calcul des intérêts du premier tour. **[à valider]**
 
 Réglages fournis : les pillards (aggro) commencent, la crypte (contrôle) laisse commencer le joueur. Ce levier est surtout prévu pour un futur PvP ; en PvE, il sert de levier de difficulté par ennemi.
+
+### 16.10 Panneau de réglage
+
+Le bouton **Réglages** ouvre un panneau, caché par défaut, qui permet d'activer ou désactiver chaque levier, de modifier ses valeurs et de régler les paramètres de chaque ennemi (PV, emplacements, poses, ordre de départ, priorités d'IA). Les changements ne valent que pour la session. Le chrono est arrêté tant que le panneau est ouvert.
+
+**Copier la config** exporte les valeurs actuelles au format de `data/config.js`, et **Copier les ennemis** fait de même pour `data/enemies.js`, pour reporter les bons réglages dans les fichiers. L'export est du JSON valide en JavaScript ; les commentaires des fichiers d'origine ne sont pas conservés.
