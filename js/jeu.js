@@ -247,6 +247,7 @@ function enregistrerResume(victoire) {
     numero: HISTORIQUE.length + 1,
     ennemi: c.ennemi.nom, victoire: victoire, tours: c.tour,
     orGagne: s.orGagne, orDepense: s.orDepense, orEpargne: J.or, interets: s.interets, ventes: s.ventes,
+    partDepensee: s.orGagne ? Math.round(100 * s.orDepense / s.orGagne) : 0,
     pv: Math.max(0, c.joueur.pv), pvPct: Math.round(100 * Math.max(0, c.joueur.pv) / c.joueur.pvMax),
     ennemisPoses: s.unitesEnnemies.length,
     ennemisAyantAttaque: s.unitesEnnemies.filter(u => u.aAttaque).length,

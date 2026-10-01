@@ -242,7 +242,7 @@ function htmlResume(r) {
   return '<h2>Combat ' + r.numero + ' : ' + (r.victoire ? 'victoire' : 'défaite') + ' contre ' + r.ennemi + '</h2>' +
     '<table class="resume">' +
     ligne('Tours', r.tours) +
-    ligne('Or', 'gagné ' + r.orGagne + ' (dont intérêts ' + r.interets + ', ventes ' + r.ventes + ') · dépensé ' + r.orDepense + ' · épargné ' + r.orEpargne) +
+    ligne('Or', 'gagné ' + r.orGagne + ' (dont intérêts ' + r.interets + ', ventes ' + r.ventes + ') · dépensé ' + r.orDepense + ' (' + r.partDepensee + ' % de l\'or gagné) · épargné ' + r.orEpargne) +
     ligne('PV restants', r.pv + ' (' + r.pvPct + ' %)') +
     ligne('Monstres ennemis', r.ennemisPoses + ' posés, ' + r.ennemisAyantAttaque + ' ont attaqué au moins une fois') +
     ligne('Plateau ennemi nettoyé', r.toursNettoyes + ' tour(s) sur ' + r.tours) +
@@ -254,11 +254,11 @@ function htmlResume(r) {
 
 function htmlHistorique() {
   if (!HISTORIQUE.length) return '<p>Aucun combat terminé pendant cette session.</p>';
-  return '<table class="resume"><tr><th>#</th><th>Ennemi</th><th>Issue</th><th>Tours</th><th>PV</th><th>Nettoyé</th><th>Dégâts</th></tr>' +
+  return '<table class="resume"><tr><th>#</th><th>Ennemi</th><th>Issue</th><th>Tours</th><th>PV</th><th>Or dépensé</th><th>Nettoyé</th><th>Dégâts</th></tr>' +
     HISTORIQUE.map(r => {
       const d = r.degats;
       return '<tr><td>' + r.numero + '</td><td>' + r.ennemi + '</td><td>' + (r.victoire ? 'V' : 'D') + '</td><td>' + r.tours +
-        '</td><td>' + r.pvPct + ' %</td><td>' + r.toursNettoyes + '/' + r.tours + '</td><td>' + (d.monstres + d.sorts + d.direct + d.enrage) + '</td></tr>';
+        '</td><td>' + r.pvPct + ' %</td><td>' + r.partDepensee + ' %</td><td>' + r.toursNettoyes + '/' + r.tours + '</td><td>' + (d.monstres + d.sorts + d.direct + d.enrage) + '</td></tr>';
     }).join('') + '</table>' +
     HISTORIQUE.slice().reverse().map(r => '<details><summary>Détail du combat ' + r.numero + '</summary>' + htmlResume(r) + '</details>').join('');
 }

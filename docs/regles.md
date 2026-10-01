@@ -228,6 +228,7 @@ Ces outils servent à équilibrer. Chaque levier se règle dans `data/config.js`
 
 - le nombre de tours ;
 - l'or gagné (revenu, intérêts et ventes), dépensé (achats, relances, niveaux) et épargné (or restant), ainsi que les intérêts touchés ;
+- la **part d'or dépensée**, en pourcentage de l'or gagné pendant le combat. Elle peut dépasser 100 % si le joueur dépense de l'or épargné lors des combats précédents ;
 - les PV restants du joueur, en valeur et en pourcentage ;
 - le nombre de monstres ennemis posés, et combien ont attaqué au moins une fois ;
 - le nombre de tours où le plateau ennemi a été **entièrement nettoyé** à la fin du tour du joueur. Un tour ne compte que si l'ennemi avait au moins un monstre au début de la phase de jeu. **[à valider]**
