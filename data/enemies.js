@@ -35,6 +35,7 @@ var ENNEMIS = {
     emplacementsMonstres: 3, // indépendant du niveau du joueur [à valider]
     emplacementsPieges: 1,
     posesParTour: 2,         // levier 2.1 : exemplaires posés à chaque pose de monstre
+    firstPlayer: 'enemy',    // levier 3 : 'player', 'enemy' ou 'random'
     ia: IA_AGGRO,
     script: [
       [{ action: 'pose', carte: 'gobelin' }],
@@ -54,6 +55,7 @@ var ENNEMIS = {
     emplacementsMonstres: 2,
     emplacementsPieges: 1,
     posesParTour: 1,
+    firstPlayer: 'player',
     ia: IA_CONTROLE,
     script: [
       [{ action: 'pose', carte: 'squelette', niveau: 2 }],

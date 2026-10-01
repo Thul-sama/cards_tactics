@@ -56,7 +56,9 @@ var CONFIG = {
     // 2.4 Le héros ennemi inflige `damage` au héros joueur à la fin de chaque tour ennemi, +`perTurn` par tour ennemi suivant
     attaqueDirecte: { enabled: false, damage: 1, perTurn: 0 },
     // 2.5 Les poses marquées `charge: true` dans les scripts (enemies.js) donnent Charge au monstre
-    chargeEnnemie: { enabled: false }
+    chargeEnnemie: { enabled: false },
+    // 3. Qui commence : `firstPlayer` par ennemi (enemies.js). Le joueur reçoit `secondPlayerGold` une fois s'il est second.
+    ordreDepart: { enabled: false, secondPlayerGold: 1 }
   },
 
   // --- Donjon : suite des ennemis (clés de data/enemies.js) ---

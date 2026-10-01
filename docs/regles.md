@@ -282,3 +282,9 @@ Les PV du héros des pillards (20) remplacent les 12 de l'exemple de la section 
 L'IA de ciblage est décrite à la section 15 ; ses priorités se règlent par ennemi (`ia`), et chaque archétype a la sienne (section 16.7).
 
 Pendant le tour du joueur, l'intention annonce l'action de l'ennemi **et ses cibles**, par exemple « Attaque : Gobelin éclaireur → ton héros ; Chef pillard → Loup des bois » ou « Lance Boule de feu → Ogre ». C'est une **prédiction** : elle est recalculée à chaque changement du plateau, donc le joueur voit comment ses actions modifient les choix de l'ennemi. Elle ne tient pas compte des monstres que l'ennemi posera ce tour-là ni des pièges du joueur. **[à valider]** : annoncer une cible fixe au tour précédent serait incohérent, puisque le joueur modifie le plateau entre-temps.
+
+### 16.9 Ordre de départ (`leviers.ordreDepart`, désactivé)
+
+Chaque ennemi a un paramètre `firstPlayer` : `"player"`, `"enemy"` ou `"random"`. Quand le levier est actif et que l'ennemi commence, il joue un tour complet (son tour 1) après le mulligan et avant la première boutique du joueur. Le joueur reçoit alors `secondPlayerGold` or (1 par défaut), une seule fois par combat, avant le calcul des intérêts du premier tour. **[à valider]**
+
+Réglages fournis : les pillards (aggro) commencent, la crypte (contrôle) laisse commencer le joueur. Ce levier est surtout prévu pour un futur PvP ; en PvE, il sert de levier de difficulté par ennemi.

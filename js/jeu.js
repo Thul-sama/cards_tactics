@@ -166,7 +166,7 @@ function demarrerCombat(id) {
   log('— Combat ' + (J.combatIndex + 1) + '/' + CONFIG.donjon.length + ' : ' + def.nom + ' —');
   for (let i = 0; i < CONFIG.piocheDebutCombat; i++) piocherCarte();
   verifierFusions();
-  if (!peutMulligan()) debutTour();
+  if (!peutMulligan()) premierTour();
 }
 
 function piocherCarte() {
@@ -197,7 +197,23 @@ function mulligan(uid) {
 }
 
 function commencerCombat() {
-  if (J.combat.phase === 'mulligan') debutTour();
+  if (J.combat.phase === 'mulligan') premierTour();
+}
+
+// Ordre de départ (levier 3) : si l'ennemi commence, il joue un tour complet avant le premier tour du joueur,
+// et le joueur reçoit une seule fois le bonus d'or du second joueur.
+function premierTour() {
+  const c = J.combat, L = CONFIG.leviers.ordreDepart;
+  let premier = L.enabled ? (c.ennemi.def.firstPlayer || 'player') : 'player';
+  if (premier === 'random') premier = Math.random() < 0.5 ? 'player' : 'enemy';
+  if (premier === 'enemy') {
+    J.or += L.secondPlayerGold;
+    c.stats.orGagne += L.secondPlayerGold;
+    log(c.ennemi.nom + ' commence. Bonus de second joueur : +' + L.secondPlayerGold + ' or.');
+    tourEnnemi();
+    if (c.fini) return;
+  }
+  debutTour();
 }
 
 function changerPhase(p) {
