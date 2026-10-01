@@ -22,7 +22,7 @@ function melanger(t) {
 function log(txt) {
   J.log.push(txt);
   if (J.log.length > 60) J.log.shift();
-  if (J.combat && J.combat.recapEnnemi) J.combat.recapEnnemi.push(txt); // récapitulatif du tour ennemi en cours
+  if (J.combat && J.combat.capture) J.combat.recapEnnemi.push(txt); // récapitulatif du tour ennemi en cours
 }
 
 function instance(id, niveau) {
@@ -589,11 +589,18 @@ function finTour() {
 // ---------- Tour ennemi ----------
 
 function tourEnnemi() {
+  const c = J.combat;
+  c.recapEnnemi = [];
+  c.capture = true;
+  jouerTourEnnemi();
+  c.capture = false;
+}
+
+function jouerTourEnnemi() {
   const c = J.combat, e = c.ennemi;
   changerPhase('ennemi');
   e.monstres.forEach(m => { m.peutAttaquer = true; });
   e.tours++;
-  c.recapEnnemi = [];
   c.directDernierTour = 0;
   for (const act of actionsEnnemi(e.tours)) {
     if (c.fini) return;
