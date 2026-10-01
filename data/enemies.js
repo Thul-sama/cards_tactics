@@ -21,8 +21,9 @@ var ENNEMIS = {
   pillards: {
     nom: 'Bande de pillards',
     pv: 20,
-    emplacementsMonstres: 3, // [à valider] non précisé par les règles
+    emplacementsMonstres: 3, // indépendant du niveau du joueur [à valider]
     emplacementsPieges: 1,
+    posesParTour: 1,         // levier 2.1 : exemplaires posés à chaque pose de monstre
     ia: IA_STANDARD,
     script: [
       [{ action: 'pose', carte: 'gobelin' }],

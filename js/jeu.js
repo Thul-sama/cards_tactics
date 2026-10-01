@@ -64,12 +64,19 @@ function actionsEnnemi(tour) {
   return tour <= d.script.length ? d.script[tour - 1] : d.ensuite;
 }
 
+// Nombre d'exemplaires posés par une action 'pose' (levier 2.1).
+function nbPoses(act) {
+  if (CARTE[act.carte].type !== 'monstre' || !CONFIG.leviers.posesMultiples.enabled) return 1;
+  return J.combat.ennemi.def.posesParTour || 1;
+}
+
 function texteIntention(tour) {
   return actionsEnnemi(tour).map(a => {
     if (a.action === 'attaque') return 'Attaque';
     const d = CARTE[a.carte];
     if (a.action === 'sort') return 'Lance ' + d.nom;
-    if (d.type === 'monstre') return 'Pose ' + d.nom + ' (' + d.atq + '/' + d.pv + ')';
+    const n = nbPoses(a);
+    if (d.type === 'monstre') return 'Pose ' + (n > 1 ? n + '× ' : '') + d.nom + ' (' + d.atq + '/' + d.pv + ')';
     return 'Pose un piège face cachée';
   }).join(', puis ');
 }
@@ -512,7 +519,7 @@ function tourEnnemi() {
   e.monstres.forEach(m => { m.peutAttaquer = true; });
   for (const act of actionsEnnemi(c.tour)) {
     if (c.fini) return;
-    if (act.action === 'pose') poseEnnemi(act.carte);
+    if (act.action === 'pose') for (let i = nbPoses(act); i > 0; i--) poseEnnemi(act);
     if (act.action === 'sort') sortEnnemi(act.carte);
     if (act.action === 'attaque') attaquesEnnemi();
   }
@@ -577,8 +584,8 @@ function sortEnnemi(id) {
   verifierFin();
 }
 
-function poseEnnemi(id) {
-  const e = J.combat.ennemi, d = CARTE[id];
+function poseEnnemi(act) {
+  const id = act.carte, e = J.combat.ennemi, d = CARTE[id];
   if (d.type === 'monstre' && e.monstres.length < e.def.emplacementsMonstres) {
     const u = unite(instance(id));
     e.monstres.push(u);

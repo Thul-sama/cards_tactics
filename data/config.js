@@ -46,7 +46,9 @@ var CONFIG = {
   // Chaque levier a un interrupteur `enabled`. Voir docs/regles.md, section 16.
   leviers: {
     // Résumé de fin de combat et historique de la session
-    statistiques: { enabled: true }
+    statistiques: { enabled: true },
+    // 2.1 Chaque pose de monstre du script pose `posesParTour` exemplaires (valeur par ennemi, enemies.js)
+    posesMultiples: { enabled: false }
   },
 
   // --- Donjon : suite des ennemis (clés de data/enemies.js) ---

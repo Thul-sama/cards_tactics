@@ -231,3 +231,9 @@ Ces outils servent à équilibrer. Chaque levier se règle dans `data/config.js`
 - les cartes achetées et les cartes jouées.
 
 Le bouton **Historique** liste les combats de la session, pour comparer plusieurs parties. Rien n'est sauvegardé : recharger la page efface l'historique.
+
+### 16.2 Plusieurs poses par tour (`leviers.posesMultiples`, désactivé)
+
+Quand le levier est actif, chaque action « pose un monstre » du script pose `posesParTour` exemplaires de ce monstre, dans la limite des emplacements libres. L'intention l'annonce, par exemple « Pose 2× Gobelin éclaireur ». **[à valider]** : les scripts ne posant qu'un monstre à la fois, « nombre de poses par tour » est interprété comme un nombre d'exemplaires.
+
+Le nombre d'emplacements de monstres de l'ennemi (`emplacementsMonstres`) se règle par ennemi. Il ne dépend pas du niveau du joueur, et il est toujours actif (ce n'est pas un levier).
