@@ -84,7 +84,7 @@ Jeu de cartes tactique solo, hors ligne, en PvE, avec une structure de roguelike
 ## 9. Économie
 
 - De l'or est gagné à chaque tour.
-- Des **intérêts** sont versés sur l'or épargné.
+- Des **intérêts** sont versés sur l'or épargné : 1 or par tranche de 5, plafonné à 1 par tour.
 - La **relance** de la boutique est payante.
 - Le **prix** des cartes dépend de leur rareté.
 - La **vente** rapporte de l'or. Sa valeur est **[à valider]**.
@@ -94,7 +94,7 @@ Jeu de cartes tactique solo, hors ligne, en PvE, avec une structure de roguelike
 | Paramètre | Valeur |
 |---|---|
 | Or par tour | 3 |
-| Intérêts | 1 or par tranche de 5 épargnés, plafonné à 3 |
+| Intérêts | 1 or par tranche de 5 épargnés, plafonné à **1** (3 avant les réglages n°1) |
 | Prix d'une relance | 1 |
 | Taille de la boutique | 3 cartes |
 | Main maximale | 7 |

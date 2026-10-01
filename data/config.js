@@ -4,7 +4,7 @@ var CONFIG = {
   // --- Économie ---
   orDepart: 0,                                   // [à valider] non précisé par les règles
   orParTour: 3,
-  interets: { tranche: 5, plafond: 3 },          // 1 or par tranche de 5 épargnés, plafonné à 3
+  interets: { tranche: 5, plafond: 1 },          // 1 or par tranche de 5 épargnés, plafonné à 1 (réglages n°1)
   prixRelance: 1,
   prixAchat: { commune: 1, rare: 2, epique: 3, legendaire: 4 }, // légendaire [à valider], aucune carte
   prixVente: { commune: 1, rare: 2, epique: 3, legendaire: 4 },

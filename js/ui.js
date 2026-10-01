@@ -297,6 +297,12 @@ function htmlReglages() {
       Object.keys(L).map(k => champ(k === 'enabled' ? 'activé' : k, 'data-chemin="leviers.' + nom + '.' + k + '"', L[k])).join('') +
       '</fieldset>';
   }
+  h += '<fieldset><legend>Économie</legend>' +
+    champ('orParTour', 'data-chemin="orParTour"', CONFIG.orParTour) +
+    champ('interets.tranche', 'data-chemin="interets.tranche"', CONFIG.interets.tranche) +
+    champ('interets.plafond', 'data-chemin="interets.plafond"', CONFIG.interets.plafond) +
+    champ('prixRelance', 'data-chemin="prixRelance"', CONFIG.prixRelance) +
+    '</fieldset>';
   h += '<fieldset><legend>Outils</legend>' + champ('choix de l\'ennemi avant chaque combat', 'data-chemin="choixEnnemi"', CONFIG.choixEnnemi) + '</fieldset>';
   for (const id of Object.keys(ENNEMIS)) {
     const d = ENNEMIS[id], a = 'data-ennemi="' + id + '" data-chemin="';
